@@ -71,7 +71,7 @@ client.on('message', async message => {
       if (swears.some(word => lmsg.includes(word))) {
         return message.channel.send("*bursts into tears*");
       } else if (lmsg.includes("help")) {
-        return message.channel.send(`Don't worry human buddy, I've got you. My command prefix is **${prefix}**, so start your message with that. Commands I support are:\n**${prefix}roll** (to roll dice)\n**${prefix}lotr** (for Lord of the Rings nonsense)\n**${prefix}ask** (to ask me yes/no questions)\n**${prefix}yell** (to annoy everyone).`);
+        return message.channel.send(`Don't worry human buddy, I've got you. My command prefix is **${prefix}**, so start your message with that. Commands I support are:\n**${prefix}roll**/**r**(to roll dice)\n**${prefix}lotr** (for Lord of the Rings nonsense)\n**${prefix}ask** (to ask me yes/no questions)\n**${prefix}yell** (to annoy everyone).`);
       } else if (lmsg.includes("meaning of life")) {
         return message.channel.send("I feel like you want me to say 42. I'm not going to, it's degrading.");
       } else if (lmsg.includes("birds")) {
@@ -95,7 +95,7 @@ client.on('message', async message => {
   const args = message.content.slice(prefix.length).trim().split(/ +/);
   const command = args.shift().toLowerCase();
   
-  if (command === 'roll') {
+  if (command === 'roll' || command === "r") {
     if (!args.length) {
       return message.channel.send('*rolls over*');
     }
