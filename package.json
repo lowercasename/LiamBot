@@ -1,0 +1,16 @@
+{
+  "name": "LiamBot",
+  "version": "1.0.0",
+  "description": "A Discord Bot",
+  "main": "main.js",
+  "author": "Raphael Kabo",
+  "license": "MIT",
+  "dependencies": {
+    "axios": "^0.21.1",
+    "dice-roller-parser": "^0.1.8",
+    "discord.js": "^12.5.1",
+    "dotenv": "^8.2.0",
+    "eslint": "^7.21.0",
+    "request": "^2.88.2"
+  }
+}
