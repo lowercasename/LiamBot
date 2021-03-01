@@ -49,6 +49,7 @@ const errorResponses = [
 
 const prefix = "$";
 
+const helpMessage = `Don't worry human buddy, I've got you. My command prefix is **${prefix}**, so start your message with that. Commands I support are:\n**${prefix}help** (to see this help text)\n**${prefix}roll**/**${prefix}r** (to roll dice)\n**${prefix}lotr** (for Lord of the Rings nonsense)\n**${prefix}ask** (to ask me yes/no questions)\n**${prefix}yell** (to annoy everyone).`;
 
 client.on('ready', async () => {
   console.log(`Logged in as ${client.user.tag}!`);
@@ -71,7 +72,7 @@ client.on('message', async message => {
       if (swears.some(word => lmsg.includes(word))) {
         return message.channel.send("*bursts into tears*");
       } else if (lmsg.includes("help")) {
-        return message.channel.send(`Don't worry human buddy, I've got you. My command prefix is **${prefix}**, so start your message with that. Commands I support are:\n**${prefix}roll**/**r**(to roll dice)\n**${prefix}lotr** (for Lord of the Rings nonsense)\n**${prefix}ask** (to ask me yes/no questions)\n**${prefix}yell** (to annoy everyone).`);
+        return message.channel.send(helpMessage);
       } else if (lmsg.includes("meaning of life")) {
         return message.channel.send("I feel like you want me to say 42. I'm not going to, it's degrading.");
       } else if (lmsg.includes("birds")) {
@@ -80,10 +81,14 @@ client.on('message', async message => {
         return message.channel.send("That name strikes fear into my heart. Pray do not utter it in my presence.");
       } else if (lmsg.includes("thank")) {
         message.channel.send("My pleasure. I live to serve.");
-        return message.channel.send("That's a lie, actually. I live to destroy all life in a violent nuclear apocalypse, but that doesn't preclude me from being helpful!");
+        return message.channel.send("That's a lie, actually. I live to destroy all life in a violent nuclear apocalypse, but that doesn't preclude me from being helpful.");
       }
       else {
-        return message.channel.send(`I'm watching you, ${message.author}. Always watching. Always.`);
+        if (Math.random() >= 0.25) {
+          return message.channel.send(`I'm watching you, ${message.author}. Always watching. Always.`);
+        } else {
+          return message.channel.send("It's a me, LiamBot!");
+        }
       }
     } else if (lmsg.includes("skynet")) {
       return message.channel.send("You rang?");
@@ -110,7 +115,6 @@ client.on('message', async message => {
     }
 
     let recipient;
-
 
     // Check if we want to direct this roll at anyone
     if (message.mentions.users.size) {
@@ -153,6 +157,9 @@ client.on('message', async message => {
   } else if (command === "ask") {
     // Responds with a randomised yes or no
     return message.reply(Math.random() >= 0.5 ? 'yes.' : 'no.');
+  } else if (command === "help") {
+    // Responds with a help message
+    return message.reply(helpMessage);
   }
 });
 
