@@ -196,7 +196,7 @@ client.on('message', async message => {
     } else {
       extractLength = parseInt(args[0]) || 1;
     }
-    if (extractLength >= 100) {
+    if (extractLength >= 50) {
       return message.channel.send("Why don't you just... read the book?");
     }
     let result = randomHobbit(extractLength);
