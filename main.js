@@ -155,6 +155,9 @@ client.on('message', async message => {
     const lotrAPICall = await lotr();
     return message.channel.send(lotrAPICall);
   } else if (command === "ask") {
+    if (!args.length) {
+      return message.channel.send("You're not giving me much to work with here.");
+    }
     // Responds with a randomised yes or no
     return message.reply(Math.random() >= 0.5 ? 'yes.' : 'no.');
   } else if (command === "help") {
