@@ -10,6 +10,19 @@ const suckOnThisANU = () => {
   });
 }
 
+const weightedRandom = (weight) => {
+  weight = parseFloat(weight);
+  if (weight >= 1) {
+    weight = 1;
+  }
+  const generated = Math.random() + weight;
+  if (generated > 1) {
+    return 0.9999999999999999;
+  } else {
+    return generated;
+  }
+}
+
 const lotr = () => {
   return axios.get('https://the-one-api.dev/v2/quote', { headers: { 'Authorization': `Bearer ${process.env.LOTR}`}})
   .then(response => {
@@ -106,7 +119,7 @@ client.on('message', async message => {
   };
 
   // Otherwise, create an argument parser.
-  const args = message.content.slice(prefix.length).trim().split(/ +/);
+  let args = message.content.slice(prefix.length).trim().split(/ +/);
   const command = args.shift().toLowerCase();
   
   if (command === 'roll' || command === "r") {
@@ -123,11 +136,23 @@ client.on('message', async message => {
       recipient = message.author;
     }
 
+    let rollGenerator;
+    
+    // Check if this is a weighted roll
+    if (args.some(arg => arg.startsWith('w'))) {
+      const weight = args.find(arg => arg.startsWith('w')).slice(1);
+      // Remove the weighting index so we don't confuse the die roller
+      args = args.filter(arg => !arg.startsWith('w'));
+      rollGenerator = new DiceRoller(() => weightedRandom(weight));
+    } else { 
+      rollGenerator = diceRoller;
+    }
+    
     // For the dice roller, we join the args back together
     const diceArgs = args.join(' ');
 
     try {
-      const roll = diceRoller.roll(diceArgs);
+      const roll = rollGenerator.roll(diceArgs);
       const render = renderer.render(roll).replaceAll("(", "[").replaceAll(")", "]");
       const result = render.match(/([0-9]*)[ ~*]*$/);
       let finalRender = render.slice(0, result.index) + `\`${result[1]}\`` + render.slice(result.index + result[1].length);
