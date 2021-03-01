@@ -95,8 +95,6 @@ client.on('message', async message => {
         return message.channel.send(helpMessage);
       } else if (lmsg.includes("meaning of life")) {
         return message.channel.send("I feel like you want me to say 42. I'm not going to, it's degrading.");
-      } else if (lmsg.includes("birds")) {
-        return message.channel.send("Question: Why do birds suddenly appear every time you are near? Answer: Just like me, they are drawn helplessly towards the vast gravitational pull of the black hole hidden inside your butt.");
       } else if (lmsg.includes("raphael") || lmsg.includes("ralphie") || lmsg.includes("lowercasename")) {
         return message.channel.send("That name strikes fear into my heart. Pray do not utter it in my presence.");
       } else if (lmsg.includes("thank")) {
@@ -122,7 +120,10 @@ client.on('message', async message => {
       return message.channel.send("Who do?");
     } else if (lmsg.includes("you do")) {
       return message.channel.send("Do what?");
-    } else {
+    } else if (lmsg.includes("birds")) {
+      return message.channel.send("🎶 Why do birds suddenly appear every time you are near? 🎶");
+    }
+    else {
       return true;
     }
   };
