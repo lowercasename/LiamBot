@@ -3,6 +3,8 @@ const Discord = require('discord.js');
 const { DiceRoller, DiscordRollRenderer } = require('dice-roller-parser');
 const axios = require('axios');
 
+const hobbit = require('./corpora/hobbit.js');
+
 const suckOnThisANU = () => {
   return axios.get(`https://qrng.anu.edu.au/API/jsonI.php?length=1&type=uint16`)
   .then(response => {
@@ -28,6 +30,11 @@ const lotr = () => {
   .then(response => {
     return response.data.docs[Math.floor(Math.random() * response.data.docs.length)].dialog;
   })
+}
+
+const randomHobbit = (length = 1) => {
+  const index = Math.floor(Math.random() * hobbit.text.length);
+  return hobbit.text.slice(index, index + length).join(" ");
 }
 
 dotenv.config();
@@ -62,7 +69,7 @@ const errorResponses = [
 
 const prefix = "$";
 
-const helpMessage = `Don't worry human buddy, I've got you. My command prefix is **${prefix}**, so start your message with that. Commands I support are:\n**${prefix}help** (to see this help text)\n**${prefix}roll**/**${prefix}r** (to roll dice)\n**${prefix}lotr** (for Lord of the Rings nonsense)\n**${prefix}ask** (to ask me yes/no questions)\n**${prefix}yell** (to annoy everyone).`;
+const helpMessage = `Don't worry human buddy, I've got you. My command prefix is **${prefix}**, so start your message with that. Commands I support are:\n**${prefix}help** (to see this help text)\n**${prefix}roll/**${prefix}r** [dice syntax]** (to roll dice)\n**${prefix}hobbit [number]** (for [number] random sentences from _The Hobbit_, default 1)\n**${prefix}ask [question]** (to ask me yes/no questions)\n**${prefix}yell [text]** (to annoy everyone).`;
 
 client.on('ready', async () => {
   console.log(`Logged in as ${client.user.tag}!`);
@@ -181,6 +188,19 @@ client.on('message', async message => {
   } else if (command === "lotr") {
     const lotrAPICall = await lotr();
     return message.channel.send(lotrAPICall);
+  } else if (command === "hobbit") {
+    // Set up the length of our extract
+    let extractLength;
+    if (!args.length) {
+      extractLength = 1;
+    } else {
+      extractLength = parseInt(args[0]) || 1;
+    }
+    if (extractLength >= 100) {
+      return message.channel.send("Why don't you just... read the book?");
+    }
+    let result = randomHobbit(extractLength);
+    return message.channel.send(result, { split: { char: ' ' } });
   } else if (command === "ask") {
     if (!args.length) {
       return message.channel.send("You're not giving me much to work with here.");
