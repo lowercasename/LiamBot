@@ -76,17 +76,16 @@ client.on('ready', async () => {
 });
 
 client.on('message', async message => {
-  // Ignore all messages targeting @everyone or @here
-  if (message.content.includes("@here") || message.content.includes("@everyone")) return false;
+  // Ignore all messages targeting @everyone or @here or sent by bots
+  if (message.content.includes("@here") || message.content.includes("@everyone") || message.author.bot) return false;
 
   // Deal with direct bot mentions first
   if (message.mentions.has(client.user.id)) {
     return message.channel.send("AUGH");
   };
   
-  // If the message doesn't start with the prefix or if a bot sent it,
-  // run through some basic responses to non-prefixed messages
-  if (!message.content.startsWith(prefix) || message.author.bot) {
+  // If the message doesn't start with the prefix, run through some basic responses to non-prefixed messages
+  if (!message.content.startsWith(prefix)) {
     let lmsg = message.content.toLowerCase();
     if (lmsg.includes("liambot")) {
       if (swears.some(word => lmsg.includes(word))) {
@@ -121,7 +120,11 @@ client.on('message', async message => {
     } else if (lmsg.includes("you do")) {
       return message.channel.send("Do what?");
     } else if (lmsg.includes("birds")) {
-      return message.channel.send("🎶 Why do birds suddenly appear every time you are near? 🎶");
+      if (Math.random() >= 0.25) {
+        return message.channel.send("🎶 Why do birds suddenly appear every time you are near? 🎶");
+      } else {
+        return message.channel.send("What are birds? We just don't know.");
+      }
     }
     else {
       return true;
