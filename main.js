@@ -69,7 +69,7 @@ const errorResponses = [
 
 const prefix = "$";
 
-const helpMessage = `Don't worry human buddy, I've got you. My command prefix is **${prefix}**, so start your message with that. Commands I support are:\n**${prefix}help** (to see this help text)\n**${prefix}roll/**${prefix}r** [dice syntax]** (to roll dice)\n**${prefix}hobbit [number]** (for [number] random sentences from _The Hobbit_, default 1)\n**${prefix}ask [question]** (to ask me yes/no questions)\n**${prefix}yell [text]** (to annoy everyone).`;
+const helpMessage = `Don't worry human buddy, I've got you. My command prefix is **${prefix}**, so start your message with that. Commands I support are:\n**${prefix}help** (to see this help text)\n**${prefix}roll/${prefix}r [dice syntax]** (to roll dice)\n**${prefix}hobbit [number]** (for [number] random sentences from _The Hobbit_, default 1)\n**${prefix}ask [question]** (to ask me yes/no questions)\n**${prefix}yell [text]** (to annoy everyone).`;
 
 client.on('ready', async () => {
   console.log(`Logged in as ${client.user.tag}!`);
