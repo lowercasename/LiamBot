@@ -95,6 +95,8 @@ client.on('message', async message => {
       } else if (lmsg.includes("thank")) {
         message.channel.send("My pleasure. I live to serve.");
         return message.channel.send("That's a lie, actually. I live to destroy all life in a violent nuclear apocalypse, but that doesn't preclude me from being helpful.");
+      } else if (lmsg.includes("good liambot") || lmsg.includes("good bot")) {
+        return message.channel.send("*purrs*");
       }
       else {
         if (Math.random() >= 0.25) {
