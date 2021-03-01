@@ -87,8 +87,17 @@ client.on('message', async message => {
       }
     } else if (lmsg.includes("skynet")) {
       return message.channel.send("You rang?");
+    } else if (lmsg.includes("remind me of the babe")) {
+      return message.channel.send("What babe?");
+    } else if (lmsg.includes("the babe with the power")) {
+      return message.channel.send("What power?");
+    } else if (lmsg.includes("the power of voodoo")) {
+      return message.channel.send("Who do?");
+    } else if (lmsg.includes("you do")) {
+      return message.channel.send("Do what?");
+    } else {
+      return true;
     }
-    return true;
   };
 
   // Otherwise, create an argument parser.
