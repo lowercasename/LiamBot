@@ -1003,6 +1003,11 @@ text-table@^0.2.0:
   resolved "https://registry.yarnpkg.com/text-table/-/text-table-0.2.0.tgz#7f5ee823ae805207c00af2df4a84ec3fcfa570b4"
   integrity sha1-f17oI66AUgfACvLfSoTsP8+lcLQ=
 
+tiny-text@^1.0.1:
+  version "1.0.1"
+  resolved "https://registry.yarnpkg.com/tiny-text/-/tiny-text-1.0.1.tgz#1c29d81957a7895c6fe0b42e355df1917bdebc50"
+  integrity sha1-HCnYGVeniVxv4LQuNV3xkXvevFA=
+
 tough-cookie@~2.5.0:
   version "2.5.0"
   resolved "https://registry.yarnpkg.com/tough-cookie/-/tough-cookie-2.5.0.tgz#cd9fb2a0aa1d5a12b473bd9fb96fa3dcff65ade2"

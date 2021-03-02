@@ -2,6 +2,7 @@ const dotenv = require('dotenv');
 const Discord = require('discord.js');
 const { DiceRoller, DiscordRollRenderer } = require('dice-roller-parser');
 const axios = require('axios');
+const tinytext = require('tiny-text');
 
 const hobbit = require('./corpora/hobbit.js');
 const dndGenerator = require('./dndgen.js');
@@ -190,6 +191,15 @@ client.on('message', async message => {
     const yellInput = args.join(' ');
     const yellOutput = `@everyone ${yellInput.toUpperCase()}`;
     return message.channel.send(yellOutput);
+  } else if (command === "whisper") {
+    if (!args.length) {
+      return message.channel.send("Shhh.");
+    }
+
+    // For the whisperer, we join the args back together as well!
+    const whisperInput = args.join(' ');
+    const whisperOutput = `${tinytext(whisperInput.toLowerCase())}`;
+    return message.channel.send(whisperOutput);
   } else if (command === "lotr") {
     const lotrAPICall = await lotr();
     return message.channel.send(lotrAPICall);
