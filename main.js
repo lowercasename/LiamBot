@@ -4,6 +4,7 @@ const { DiceRoller, DiscordRollRenderer } = require('dice-roller-parser');
 const axios = require('axios');
 
 const hobbit = require('./corpora/hobbit.js');
+const dndGenerator = require('./dndgen.js');
 
 const suckOnThisANU = () => {
   return axios.get(`https://qrng.anu.edu.au/API/jsonI.php?length=1&type=uint16`)
@@ -214,6 +215,29 @@ client.on('message', async message => {
   } else if (command === "help") {
     // Responds with a help message
     return message.reply(helpMessage);
+  } else if (command === 'dnd') {
+    if (args.includes('help')) {
+      return message.channel.send(`To generate a D&D character, use the following command syntax: **${prefix}dnd [level] [race] [class] [primary ability score] [secondary ability score]**. All paramaters are optional, and the generator does its best to determine what race and class you mean. Do not leave spaces in race and class names.`);
+    }
+    let character = dndGenerator.generate({
+      level: args[0],
+      raceName: args[1],
+      className: args[2],
+      primaryStat: args[3],
+      secondaryStat: args[4]
+    });
+    console.log(args);
+    let abilitiesString = character.abilities.map(o => `**${o.name}**: ${o.score} (${o.modifier})`).join("; ");
+    return message.channel.send(`
+    **Name:** ${character.name}
+    **Class:** ${character.class}
+    **Race:** ${character.race}
+    **Level:** ${character.level}
+    ${abilitiesString}
+    **HP:** ${character.hp}
+    **Proficieny Bonus:** ${character.proficiencyBonus}
+    ${character.notes ? `**Notes:** ${character.notes}` : ``}
+    `);
   }
 });
 
