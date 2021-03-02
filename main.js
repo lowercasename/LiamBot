@@ -217,26 +217,35 @@ client.on('message', async message => {
     return message.reply(helpMessage);
   } else if (command === 'dnd') {
     if (args.includes('help')) {
-      return message.channel.send(`To generate a D&D character, use the following command syntax: **${prefix}dnd [level] [race] [class] [primary ability score] [secondary ability score]**. All paramaters are optional, and the generator does its best to determine what race and class you mean. Do not leave spaces in race and class names.`);
+      return message.channel.send(`To generate a D&D character, use the following command syntax: **${prefix}dnd [level] [race] [class] [primary ability score] [secondary ability score]**. All parameters are optional, and the generator does its best to determine what race and class you mean. Do not leave spaces in race and class names.`);
     }
-    let character = dndGenerator.generate({
-      level: args[0],
-      raceName: args[1],
-      className: args[2],
-      primaryStat: args[3],
-      secondaryStat: args[4]
+    const abilities = ['str', 'dex', 'con', 'int', 'wis', 'cha', 'strength', 'dexterity', 'constitution', 'intelligence', 'wisdom', 'charisma'];
+    // Extract the number - that's the level
+    const level = args.filter(s => parseInt(s) == s)[0];
+    args = args.filter(s => s != level);
+    const primaryStat = args.filter(s => abilities.includes(s.toLowerCase()))[0];
+    args = args.filter(s => s != primaryStat);
+    console.log("1", args);
+    const secondaryStat = args.filter(s => abilities.includes(s.toLowerCase()))[0];
+    args = args.filter(s => s != secondaryStat);
+    console.log("2", args);
+  
+    console.log({
+      level: level,
+      identifier1: args[0] || undefined,
+      identifier2: args[1] || undefined,
+      primaryStat,
+      secondaryStat,
     });
-    console.log(args);
+    let character = dndGenerator.generate({
+      level: level,
+      identifier1: args[0] || undefined,
+      identifier2: args[1] || undefined,
+      primaryStat,
+      secondaryStat,
+    });
     let abilitiesString = character.abilities.map(o => `**${o.name}** ${o.score} (${o.modifier})`).join("; ");
-    return message.channel.send(`
-    **Name:** ${character.name}
-    **Class:** ${character.class}
-    **Race:** ${character.race}
-    **Level:** ${character.level}
-    ${abilitiesString}
-    **HP:** ${character.hp}
-    **Proficieny Bonus:** ${character.proficiencyBonus}
-    ${character.notes ? `**Notes:** ${character.notes}` : ``}
+    return message.channel.send(`**Name:** ${character.name}\n**Class:** ${character.class}\n**Race:** ${character.race}\n**Level:** ${character.level}\n${abilitiesString}\n**HP:** ${character.hp}\n**Proficieny Bonus:** ${character.proficiencyBonus}\n${character.notes ? `**Notes:** ${character.notes}` : ``}
     `);
   }
 });
