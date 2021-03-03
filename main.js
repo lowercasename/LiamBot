@@ -5,6 +5,7 @@ const axios = require('axios');
 const tinytext = require('tiny-text');
 
 const hobbit = require('./corpora/hobbit.js');
+const hhgttg = require('./corpora/hhgttg.js');
 const dndGenerator = require('./dndgen.js');
 
 const suckOnThisANU = () => {
@@ -34,9 +35,20 @@ const lotr = () => {
   })
 }
 
-const randomHobbit = (length = 1) => {
-  const index = Math.floor(Math.random() * hobbit.text.length);
-  return hobbit.text.slice(index, index + length).join(" ");
+const randomText = (text, length = 1) => {
+  let source;
+  switch (text) {
+    case 'hobbit':
+      source = hobbit.text;
+      break;
+    case 'hhggtg':
+      source = hhgttg.text;
+      break;
+    default:
+      return false;
+  }
+  const index = Math.floor(Math.random() * source.length);
+  return source.slice(index, index + length).join(" ");
 }
 
 dotenv.config();
@@ -203,7 +215,7 @@ client.on('message', async message => {
   } else if (command === "lotr") {
     const lotrAPICall = await lotr();
     return message.channel.send(lotrAPICall);
-  } else if (command === "hobbit") {
+  } else if (command === "hobbit" || command === "hhgttg") {
     // Set up the length of our extract
     let extractLength;
     if (!args.length) {
@@ -214,7 +226,7 @@ client.on('message', async message => {
     if (extractLength >= 50) {
       return message.channel.send("Why don't you just... read the book?");
     }
-    let result = randomHobbit(extractLength);
+    let result = randomText(command, extractLength);
     return message.channel.send(result, { split: { char: ' ' } });
   } else if (command === "ask") {
     if (!args.length) {
