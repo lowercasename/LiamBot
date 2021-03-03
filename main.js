@@ -41,7 +41,7 @@ const randomText = (text, length = 1) => {
     case 'hobbit':
       source = hobbit.text;
       break;
-    case 'hhggtg':
+    case 'hhgttg':
       source = hhgttg.text;
       break;
     default:
