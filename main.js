@@ -312,7 +312,11 @@ client.on('message', async message => {
       db.query(`SELECT * FROM quotes WHERE server = ? ORDER BY RAND() LIMIT 1;`, [serverId], function (error, results, fields) {
         if (error) throw error;
         const result = results[0];
-        return message.channel.send(`[#${result.id}] **@${result.quote_author_username}** ${result.quote}`);
+        if (result) {
+          return message.channel.send(`[#${result.id}] **@${result.quote_author_username}** ${result.quote}`);
+        } else {
+          return message.channel.send("There are no quotes saved on this server.")
+        }
         // \n[Saved by @${result.quoter_username}]
       });
     }
