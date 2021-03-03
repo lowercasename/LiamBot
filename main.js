@@ -94,7 +94,7 @@ const errorResponses = [
 
 const prefix = "$";
 
-const helpMessage = `Don't worry human buddy, I've got you. My command prefix is **${prefix}**, so start your message with that. Commands I support are:\n**${prefix}help** (to see this help text)\n**${prefix}roll/${prefix}r [dice syntax]** (to roll dice)\n**${prefix}hobbit [number]** (for [number] random sentences from _The Hobbit_, default 1)\n**${prefix}dnd** (to generate D&D characters; type **${prefix}dnd help** for syntax)\n**${prefix}ask [question]** (to ask me yes/no questions)\n**${prefix}yell [text]** (to annoy everyone)`;
+const helpMessage = `Don't worry human buddy, I've got you. My command prefix is **${prefix}**, so start your message with that. Commands I support are:\n**${prefix}help** (to see this help text)\n**${prefix}roll/${prefix}r [dice syntax]** (to roll dice)\n**${prefix}hobbit [number]** (for [number] random sentences from _The Hobbit_, default 1)\n**${prefix}dnd** (to generate D&D characters; type **${prefix}dnd help** for syntax)\n**${prefix}quote** (for quotes; type **${prefix}quote help** for syntax)\n**${prefix}ask [question]** (to ask me yes/no questions)\n**${prefix}yell [text]** (to annoy everyone)`;
 
 client.on('ready', async() => {
     console.log(`Logged in as ${client.user.tag}!`);
@@ -307,7 +307,7 @@ client.on('message', async message => {
       db.query(`SELECT * FROM quotes ORDER BY RAND() LIMIT 1;`, function(error, results, fields) {
         if (error) throw error;
         const result = results[0];
-        return message.channel.send(`**@${result.quote_author_username}** ${result.quote}`);
+        return message.channel.send(`[#${result.id}] **@${result.quote_author_username}** ${result.quote}`);
         // \n[Saved by @${result.quoter_username}]
     });
     }
