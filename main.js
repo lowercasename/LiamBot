@@ -223,7 +223,7 @@ client.on('message', async message => {
             } else if (command === "lotr") {
                 const lotrAPICall = await lotr();
                 return message.channel.send(lotrAPICall);
-            } else if (command === "hobbit" || command === "hhgttg" || command === "book") {
+            } else if (command === "book") {
                 // Set up the length of our extract
                 let validBooks = ["hobbit", "hhgttg"];
                 let extractLength, book;
