@@ -279,6 +279,8 @@ client.on('message', async message => {
     `);
   } else if (command === 'quote') {
     let quoteId;
+    let serverId = message.guild.id;
+    console.log(serverId);
     if (args.includes('help')) {
       return message.channel.send(`To retrieve a random quote, simply type **${prefix}quote**. To save a quote, reply to the message you want to save and type **${prefix}quote save**.`);
     }
@@ -297,7 +299,7 @@ client.on('message', async message => {
             if (!quoteContent || !quoteContent.length) {
               return message.channel.send("I can't let you do that, Dave.");
             }
-            db.query(`INSERT INTO quotes (timestamp, quoter_id, quoter_username, quote_id, quote, quote_author_id, quote_author_username) VALUES (?, ?, ?, ?, ?, ?, ?)`, [timestamp, quoter_id, quoter_username, quoteId, quoteContent, quote_author_id, quote_author_username], function (error, results, fields) {
+            db.query(`INSERT INTO quotes (timestamp, server, quoter_id, quoter_username, quote_id, quote, quote_author_id, quote_author_username) VALUES (?, ?, ?, ?, ?, ?, ?)`, [timestamp, serverId, quoter_id, quoter_username, quoteId, quoteContent, quote_author_id, quote_author_username], function (error, results, fields) {
               if (error) throw error;
               return message.reply('quote saved.');
             });
@@ -307,7 +309,7 @@ client.on('message', async message => {
       }
     } else {
       // We want to see a random quote!
-      db.query(`SELECT * FROM quotes ORDER BY RAND() LIMIT 1;`, function (error, results, fields) {
+      db.query(`SELECT * FROM quotes WHERE server = ? ORDER BY RAND() LIMIT 1;`, [serverId], function (error, results, fields) {
         if (error) throw error;
         const result = results[0];
         return message.channel.send(`[#${result.id}] **@${result.quote_author_username}** ${result.quote}`);
