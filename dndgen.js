@@ -558,43 +558,56 @@ const generate = ({ identifier1, identifier2, primaryStat, secondaryStat, level 
     level = 1;
   }
 
-  if (!primaryStat || typeof primaryStat !== 'string' || !abilities.includes(primaryStat.toUpperCase())) {
-    primaryStat = classObject.primary;
-  } else {
-    primaryStat = primaryStat.toUpperCase().substring(0, 3);
+  // Build our stat order (our highest-scored to lowest-scored stats, in order)
+  const statOrder = [];
+  for (let i = 0; i < 6; i++) {
+    // We add stats with this preference:
+    // 1. The provided primary stat, if any
+    // 2. The provided secondary stat, if any
+    // 3. The class primary stat, if not already set
+    // 4. The class secondary stat, if not already set
+    // 5. CON, if not already set
+    // 6. Any random remaining stat
+    // If primary stat is not in the stat order array, is set, is a string, and is a valid stat name
+    if (primaryStat &&
+      !statOrder.includes(primaryStat.toUpperCase().substring(0, 3)) &&
+      typeof primaryStat === 'string' &&
+      abilities.includes(primaryStat.toUpperCase().substring(0, 3))
+    ) {
+      statOrder.push(primaryStat.toUpperCase().substring(0, 3));
+    }
+    // Same for secondary stat
+    else if (secondaryStat &&
+        !statOrder.includes(secondaryStat.toUpperCase().substring(0, 3)) &&
+        typeof secondaryStat === 'string' &&
+        abilities.includes(secondaryStat.toUpperCase().substring(0, 3))
+    ) {
+      statOrder.push(secondaryStat.toUpperCase().substring(0, 3));
+    }
+    else if (!statOrder.includes(classObject.primary)) {
+      statOrder.push(classObject.primary);
+    }
+    else if (!statOrder.includes(classObject.secondary)) {
+      statOrder.push(classObject.secondary);
+    }
+    else if (!statOrder.includes('CON')) {
+      statOrder.push('CON');
+    }
+    else {
+      let remainingStats = abilities.filter(s => !statOrder.includes(s));
+      statOrder.push(remainingStats[Math.floor(Math.random() * remainingStats.length)]);
+    }
   }
 
-  if (!secondaryStat || typeof secondaryStat !== 'string' || !abilities.includes(secondaryStat.toUpperCase())) {
-    secondaryStat = classObject.secondary;
-  } else {
-    secondaryStat = secondaryStat.toUpperCase().substring(0, 3);
-  }
-
-  const usedStats = [];
+  console.log(statOrder);
 
   const scores = abilities.map(s => {
     return diceRoller.rollValue('4d6dl');
   })
     .sort((a, b) => b - a)
     .map((i, index) => {
-      let statName;
+      let statName = statOrder[index];
       let total;
-      if (index === 0) {
-        statName = primaryStat;
-      } else if (index === 1) {
-        statName = secondaryStat;
-      } else if (index === 2) {
-        if (!primaryStat.includes('CON') && !secondaryStat.includes('CON')) {
-          statName = 'CON';
-        } else {
-          validAbilities = abilities.filter(s => !usedStats.includes(s));
-          statName = validAbilities[Math.floor(Math.random() * validAbilities.length)];
-        }
-      } else {
-        validAbilities = abilities.filter(s => !usedStats.includes(s));
-        statName = validAbilities[Math.floor(Math.random() * validAbilities.length)];
-      }
-      usedStats.push(statName);
       let matchingModifier = Object.entries(raceObject.modifiers).find(a => a[0] === statName);
       if (matchingModifier) {
         total = i + matchingModifier[1];
