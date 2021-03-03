@@ -94,7 +94,7 @@ const errorResponses = [
 
 const prefix = "$";
 
-const helpMessage = `Don't worry human buddy, I've got you. My command prefix is **${prefix}**, so start your message with that. Commands I support are:\n**${prefix}help** (to see this help text)\n**${prefix}roll/${prefix}r [dice syntax]** (to roll dice)\n**${prefix}hobbit [number]** (for [number] random sentences from _The Hobbit_, default 1)\n**${prefix}dnd** (to generate D&D characters; type **${prefix}dnd help** for syntax)\n**${prefix}quote** (for quotes; type **${prefix}quote help** for syntax)\n**${prefix}ask [question]** (to ask me yes/no questions)\n**${prefix}yell [text]** (to annoy everyone)`;
+const helpMessage = `Don't worry human buddy, I've got you. My command prefix is **${prefix}**, so start your message with that. Commands I support are:\n**${prefix}help** (to see this help text)\n**${prefix}roll/${prefix}r [dice syntax]** (to roll dice)\n**${prefix}book [title] [number]** (for [number] of sentences from our library of books, current titles are 'hobbit' and 'hhgttg')\n**${prefix}dnd** (to generate D&D characters; type **${prefix}dnd help** for syntax)\n**${prefix}quote** (for quotes; type **${prefix}quote help** for syntax)\n**${prefix}ask [question]** (to ask me yes/no questions)\n**${prefix}yell [text]** (to annoy everyone)`;
 
 client.on('ready', async() => {
     console.log(`Logged in as ${client.user.tag}!`);
@@ -223,18 +223,20 @@ client.on('message', async message => {
             } else if (command === "lotr") {
                 const lotrAPICall = await lotr();
                 return message.channel.send(lotrAPICall);
-            } else if (command === "hobbit" || command === "hhgttg") {
+            } else if (command === "hobbit" || command === "hhgttg" || command === "book") {
                 // Set up the length of our extract
-                let extractLength;
+                let validBooks = ["hobbit", "hhgttg"];
+                let extractLength, book;
                 if (!args.length) {
-                    extractLength = 1;
+                    return message.channel.send("Pick a book to read from (hobbit or hhgttg).")
                 } else {
-                    extractLength = parseInt(args[0]) || 1;
+                    book = validBooks.includes(args[0]) ? args[0] : 'hobbit';
+                    extractLength = parseInt(args[1]) || 1;
                 }
                 if (extractLength >= 50) {
                     return message.channel.send("Why don't you just... read the book?");
                 }
-                let result = randomText(command, extractLength);
+                let result = randomText(book, extractLength);
                 return message.channel.send(result, { split: { char: ' ' } });
             } else if (command === "ask") {
                 if (!args.length) {
