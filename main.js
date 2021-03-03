@@ -294,7 +294,10 @@ client.on('message', async message => {
           const quoteContent = quote.first().content;
           const quote_author_id = quote.first().author.id;
           const quote_author_username = quote.first().author.username;
-          db.query(`INSERT INTO quotes (timestamp, quoter_id, quoter_username, quote, quote_author_id, quote_author_username) VALUES (?, ?, ?, ?, ?, ?)`, [timestamp, quoter_id, quoter_username, quoteContent, quote_author_id, quote_author_username], function(error, results, fields) {
+          if (!quoteContent || !quoteContent.length) {
+              return message.channel.send("I can't let you do that, Dave.");
+          }
+          db.query(`INSERT INTO quotes (timestamp, quoter_id, quoter_username, quote_id, quote, quote_author_id, quote_author_username) VALUES (?, ?, ?, ?, ?, ?, ?)`, [timestamp, quoter_id, quoter_username, quoteId, quoteContent, quote_author_id, quote_author_username], function(error, results, fields) {
               if (error) throw error;
               return message.reply('quote saved.');
           });
