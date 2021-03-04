@@ -8,6 +8,7 @@ const tinytext = require('tiny-text');
 const hobbit = require('./corpora/hobbit.js');
 const hhgttg = require('./corpora/hhgttg.js');
 const lotr = require('./corpora/lotr.js');
+const silmarillion = require('./corpora/silmarillion.js');
 const dndGenerator = require('./dndgen.js');
 
 dotenv.config();
@@ -60,6 +61,9 @@ const randomText = (text, length = 1) => {
         case 'lotr':
             source = lotr.text;
             break;
+        case 'silmarillion':
+            source = silmarillion.text;
+            break;
         default:
             return false;
     }
@@ -98,7 +102,7 @@ const errorResponses = [
 
 const prefix = "$";
 
-const helpMessage = `Don't worry human buddy, I've got you. My command prefix is **${prefix}**, so start your message with that. Commands I support are:\n**${prefix}help** (to see this help text)\n**${prefix}roll/${prefix}r [dice syntax]** (to roll dice)\n**${prefix}book [title] [number]** (for [number] of sentences from our library of books, current titles are 'hobbit', 'lotr', and 'hhgttg')\n**${prefix}dnd** (to generate D&D characters; type **${prefix}dnd help** for syntax)\n**${prefix}quote** (for quotes; type **${prefix}quote help** for syntax)\n**${prefix}ask [question]** (to ask me yes/no questions)\n**${prefix}yell [text]** (to annoy everyone)\n**${prefix}whisper [text]** (kawaii ne)`;
+const helpMessage = `Don't worry human buddy, I've got you. My command prefix is **${prefix}**, so start your message with that. Commands I support are:\n**${prefix}help** (to see this help text)\n**${prefix}roll/${prefix}r [dice syntax]** (to roll dice)\n**${prefix}book [title] [number]** (for [number] of sentences from our library of books, current titles are 'hobbit', 'lotr', 'silmarillion', and 'hhgttg')\n**${prefix}dnd** (to generate D&D characters; type **${prefix}dnd help** for syntax)\n**${prefix}quote** (for quotes; type **${prefix}quote help** for syntax)\n**${prefix}ask [question]** (to ask me yes/no questions)\n**${prefix}yell [text]** (to annoy everyone)\n**${prefix}whisper [text]** (kawaii ne)`;
 
 client.on('ready', async() => {
     console.log(`Logged in as ${client.user.tag}!`);
@@ -108,233 +112,271 @@ client.on('message', async message => {
             // Ignore all messages targeting @everyone or @here or sent by bots
             if (message.content.includes("@here") || message.content.includes("@everyone") || message.author.bot) return false;
 
-            // Deal with direct bot mentions first
-            if (message.mentions.has(client.user.id)) {
-                return message.channel.send("AUGH");
-            };
-
-            // If the message doesn't start with the prefix, run through some basic responses to non-prefixed messages
-            if (!message.content.startsWith(prefix)) {
-                let lmsg = message.content.toLowerCase();
-                if (lmsg.includes("liambot")) {
-                    if (swears.some(word => lmsg.includes(word))) {
-                        return message.channel.send("*bursts into tears*");
-                    } else if (lmsg.includes("help")) {
-                        return message.channel.send(helpMessage);
-                    } else if (lmsg.includes("meaning of life")) {
-                        return message.channel.send("I feel like you want me to say 42. I'm not going to, it's degrading.");
-                    } else if (lmsg.includes("raphael") || lmsg.includes("ralphie") || lmsg.includes("lowercasename")) {
-                        return message.channel.send("That name strikes fear into my heart. Pray do not utter it in my presence.");
-                    } else if (lmsg.includes("thank")) {
-                        message.channel.send("My pleasure. I live to serve.");
-                        return message.channel.send("That's a lie, actually. I live to destroy all life in a violent nuclear apocalypse, but that doesn't preclude me from being helpful.");
-                    } else if (lmsg.includes("good")) {
-                        return message.channel.send("*purrs*");
-                    } else {
-                        if (Math.random() >= 0.25) {
-                            return message.channel.send(`I'm watching you, ${message.author}. Always watching. Always.`);
+            // Are we muted?
+            const channelId = message.channel.id;
+            let isMuted;
+            db.query(`SELECT * FROM channels WHERE channel_id = ?;`, [channelId], async function(error, results, fields) {
+                        if (error) {
+                            console.error(error);
+                            return message.channel.send(errorResponses[Math.floor(Math.random() * errorResponses.length)]);
+                        };
+                        const result = results[0];
+                        if (result) {
+                            isMuted = result.muted === 1 ? true : false;
                         } else {
-                            return message.channel.send("It's a me, LiamBot!");
+                            isMuted = false;
                         }
-                    }
-                } else if (lmsg.includes("skynet")) {
-                    return message.channel.send("You rang?");
-                } else if (lmsg.includes("remind me of the babe")) {
-                    return message.channel.send("What babe?");
-                } else if (lmsg.startsWith("the babe with the power")) {
-                    return message.channel.send("What power?");
-                } else if (lmsg.startsWith("the power of voodoo")) {
-                    return message.channel.send("Who do?");
-                } else if (lmsg.startsWith("you do")) {
-                    return message.channel.send("Do what?");
-                } else if (lmsg.includes("birds")) {
-                    if (Math.random() >= 0.25) {
-                        return message.channel.send("🎶 Why do birds suddenly appear every time you are near? 🎶");
-                    } else {
-                        return message.channel.send("What are birds? We just don't know.");
-                    }
-                } else {
-                    return true;
-                }
-            };
 
-            // Otherwise, create an argument parser.
-            let args = message.content.slice(prefix.length).trim().split(/ +/);
-            const command = args.shift().toLowerCase();
+                        const sendMessage = (content, reply, config) => {
+                            if (!isMuted) {
+                                if (reply) {
+                                    return message.reply(content, config);
+                                }
+                                return message.channel.send(content, config);
+                            }
+                        }
 
-            if (command === 'roll' || command === "r") {
-                if (!args.length) {
-                    return message.channel.send('*rolls over*');
-                }
+                        // Deal with direct bot mentions first
+                        if (message.mentions.has(client.user.id)) {
+                            return sendMessage("AUGH");
+                        };
 
-                let recipient;
+                        // If the message doesn't start with the prefix, run through some basic responses to non-prefixed messages
+                        if (!message.content.startsWith(prefix)) {
+                            let lmsg = message.content.toLowerCase();
+                            if (lmsg.includes("liambot")) {
+                                if (swears.some(word => lmsg.includes(word))) {
+                                    return sendMessage("*bursts into tears*");
+                                } else if (lmsg.includes("help")) {
+                                    return sendMessage(helpMessage);
+                                } else if (lmsg.includes("meaning of life")) {
+                                    return sendMessage("I feel like you want me to say 42. I'm not going to, it's degrading.");
+                                } else if (lmsg.includes("raphael") || lmsg.includes("ralphie") || lmsg.includes("lowercasename")) {
+                                    return sendMessage("That name strikes fear into my heart. Pray do not utter it in my presence.");
+                                } else if (lmsg.includes("thank")) {
+                                    sendMessage("My pleasure. I live to serve.");
+                                    return sendMessage("That's a lie, actually. I live to destroy all life in a violent nuclear apocalypse, but that doesn't preclude me from being helpful.");
+                                } else if (lmsg.includes("good")) {
+                                    return sendMessage("*purrs*");
+                                } else {
+                                    if (Math.random() >= 0.25) {
+                                        return sendMessage(`I'm watching you, ${message.author}. Always watching. Always.`);
+                                    } else {
+                                        return sendMessage("It's a me, LiamBot!");
+                                    }
+                                }
+                            } else if (lmsg.includes("skynet")) {
+                                return sendMessage("You rang?");
+                            } else if (lmsg.includes("remind me of the babe")) {
+                                return sendMessage("What babe?");
+                            } else if (lmsg.startsWith("the babe with the power")) {
+                                return sendMessage("What power?");
+                            } else if (lmsg.startsWith("the power of voodoo")) {
+                                return sendMessage("Who do?");
+                            } else if (lmsg.startsWith("you do")) {
+                                return sendMessage("Do what?");
+                            } else if (lmsg.includes("birds")) {
+                                if (Math.random() >= 0.25) {
+                                    return sendMessage("🎶 Why do birds suddenly appear every time you are near? 🎶");
+                                } else {
+                                    return sendMessage("What are birds? We just don't know.");
+                                }
+                            } else {
+                                return true;
+                            }
+                        };
 
-                // Check if we want to direct this roll at anyone
-                if (message.mentions.users.size) {
-                    recipient = message.mentions.users.first();
-                } else {
-                    recipient = message.author;
-                }
+                        // Otherwise, create an argument parser.
+                        let args = message.content.slice(prefix.length).trim().split(/ +/);
+                        const command = args.shift().toLowerCase();
 
-                let rollGenerator;
+                        if (command === 'roll' || command === "r") {
+                            if (!args.length) {
+                                return sendMessage('*rolls over*');
+                            }
 
-                // Check if this is a weighted roll
-                if (args.some(arg => arg.startsWith('w'))) {
-                    const weight = args.find(arg => arg.startsWith('w')).slice(1);
-                    // Remove the weighting index so we don't confuse the die roller
-                    args = args.filter(arg => !arg.startsWith('w'));
-                    rollGenerator = new DiceRoller(() => weightedRandom(weight));
-                } else {
-                    rollGenerator = diceRoller;
-                }
+                            let recipient;
 
-                // For the dice roller, we join the args back together
-                const diceArgs = args.join(' ');
+                            // Check if we want to direct this roll at anyone
+                            if (message.mentions.users.size) {
+                                recipient = message.mentions.users.first();
+                            } else {
+                                recipient = message.author;
+                            }
 
-                try {
-                    const roll = rollGenerator.roll(diceArgs);
-                    const render = renderer.render(roll).replaceAll("(", "[").replaceAll(")", "]");
-                    const result = render.match(/([0-9]*)[ ~*]*$/);
-                    let finalRender = render.slice(0, result.index) + `\`${result[1]}\`` + render.slice(result.index + result[1].length);
-                    // Trim our message in case it's too damn big
-                    finalRender = finalRender.substring(0, 1997);
-                    message.channel.send(`${recipient} 🎲 ${finalRender}`);
-                } catch (error) {
-                    // This generically catches syntax and other errors with the die parser
-                    console.error(error);
-                    const response = errorResponses[Math.floor(Math.random() * errorResponses.length)];
-                    return message.channel.send(response);
-                }
+                            let rollGenerator;
 
-            } else if (command === "yell") {
-                if (!args.length) {
-                    return message.channel.send("Shhh.");
-                }
+                            // Check if this is a weighted roll
+                            if (args.some(arg => arg.startsWith('w'))) {
+                                const weight = args.find(arg => arg.startsWith('w')).slice(1);
+                                // Remove the weighting index so we don't confuse the die roller
+                                args = args.filter(arg => !arg.startsWith('w'));
+                                rollGenerator = new DiceRoller(() => weightedRandom(weight));
+                            } else {
+                                rollGenerator = diceRoller;
+                            }
 
-                // For the yeller, we join the args back together as well!
-                const yellInput = args.join(' ');
-                const yellOutput = `@everyone ${yellInput.toUpperCase()}`;
-                return message.channel.send(yellOutput);
-            } else if (command === "whisper") {
-                if (!args.length) {
-                    return message.channel.send("Shhh.");
-                }
+                            // For the dice roller, we join the args back together
+                            const diceArgs = args.join(' ');
 
-                // For the whisperer, we join the args back together as well!
-                const whisperInput = args.join(' ');
-                const whisperOutput = `${tinytext(whisperInput.toLowerCase())}`;
-                return message.channel.send(whisperOutput);
-            } else if (command === "lotr") {
-                const lotrAPICall = await lotrAPI();
-                return message.channel.send(lotrAPICall);
-            } else if (command === "book") {
-                // Set up the length of our extract
-                let validBooks = ["hobbit", "hhgttg", "lotr"];
-                let extractLength, book;
-                if (!args.length) {
-                    return message.channel.send("Pick a book to read from (hobbit or hhgttg).")
-                } else {
-                    book = validBooks.includes(args[0]) ? args[0] : validBooks[Math.floor(Math.random() * validBooks.length)];
-                    extractLength = parseInt(args[1]) || 1;
-                }
-                if (extractLength >= 50) {
-                    return message.channel.send("Why don't you just... read the book?");
-                }
-                let result = randomText(book, extractLength);
-                return message.channel.send(result, { split: { char: ' ' } });
-            } else if (command === "ask") {
-                if (!args.length) {
-                    return message.channel.send("You're not giving me much to work with here.");
-                }
-                // Responds with a randomised yes or no
-                return message.reply(Math.random() >= 0.5 ? 'yes.' : 'no.');
-            } else if (command === "help") {
-                // Responds with a help message
-                return message.reply(helpMessage);
-            } else if (command === 'dnd') {
-                if (args.includes('help')) {
-                    return message.channel.send(`To generate a D&D character, use the following command syntax: **${prefix}dnd [level] [race] [class] [primary ability score] [secondary ability score]**. All parameters are optional, and the generator does its best to determine what race and class you mean. Do not leave spaces in race and class names.`);
-                }
-                const abilities = ['str', 'dex', 'con', 'int', 'wis', 'cha', 'strength', 'dexterity', 'constitution', 'intelligence', 'wisdom', 'charisma'];
-                // Extract the number - that's the level
-                const level = args.filter(s => parseInt(s) == s)[0];
-                args = args.filter(s => s != level);
-                const primaryStat = args.filter(s => abilities.includes(s.toLowerCase()))[0];
-                args = args.filter(s => s != primaryStat);
-                console.log("1", args);
-                const secondaryStat = args.filter(s => abilities.includes(s.toLowerCase()))[0];
-                args = args.filter(s => s != secondaryStat);
-                console.log("2", args);
+                            try {
+                                const roll = rollGenerator.roll(diceArgs);
+                                const render = renderer.render(roll).replaceAll("(", "[").replaceAll(")", "]");
+                                const result = render.match(/([0-9]*)[ ~*]*$/);
+                                let finalRender = render.slice(0, result.index) + `\`${result[1]}\`` + render.slice(result.index + result[1].length);
+                                // Trim our message in case it's too damn big
+                                finalRender = finalRender.substring(0, 1997);
+                                sendMessage(`${recipient} 🎲 ${finalRender}`);
+                            } catch (error) {
+                                // This generically catches syntax and other errors with the die parser
+                                console.error(error);
+                                const response = errorResponses[Math.floor(Math.random() * errorResponses.length)];
+                                return sendMessage(response);
+                            }
 
-                console.log({
-                    level: level,
-                    identifier1: args[0] || undefined,
-                    identifier2: args[1] || undefined,
-                    primaryStat,
-                    secondaryStat,
-                });
-                let character = dndGenerator.generate({
-                    level: level,
-                    identifier1: args[0] || undefined,
-                    identifier2: args[1] || undefined,
-                    primaryStat,
-                    secondaryStat,
-                });
-                let abilitiesString = character.abilities.map(o => `**${o.name}** ${o.score} (${o.modifier})`).join("; ");
-                return message.channel.send(`**Name:** ${character.name}\n**Class:** ${character.class}\n**Race:** ${character.race}\n**Level:** ${character.level}\n${abilitiesString}\n**HP:** ${character.hp}\n**Proficieny Bonus:** ${character.proficiencyBonus}\n${character.notes ? `**Notes:** ${character.notes}` : ``}
+                        } else if (command === "yell") {
+                            if (!args.length) {
+                                return sendMessage("Shhh.");
+                            }
+
+                            // For the yeller, we join the args back together as well!
+                            const yellInput = args.join(' ');
+                            const yellOutput = `@everyone ${yellInput.toUpperCase()}`;
+                            return sendMessage(yellOutput);
+                        } else if (command === "whisper") {
+                            if (!args.length) {
+                                return sendMessage("Shhh.");
+                            }
+
+                            // For the whisperer, we join the args back together as well!
+                            const whisperInput = args.join(' ');
+                            const whisperOutput = `${tinytext(whisperInput.toLowerCase())}`;
+                            return sendMessage(whisperOutput);
+                        } else if (command === "lotr") {
+                            const lotrAPICall = await lotrAPI();
+                            return sendMessage(lotrAPICall);
+                        } else if (command === "book") {
+                            // Set up the length of our extract
+                            let validBooks = ["hobbit", "hhgttg", "lotr", "silmarillion"];
+                            let extractLength, book;
+                            if (!args.length) {
+                                return sendMessage(`Pick a book to read from (${[validBooks].join(', ')}).`)
+                            } else {
+                                book = validBooks.includes(args[0]) ? args[0] : validBooks[Math.floor(Math.random() * validBooks.length)];
+                                extractLength = parseInt(args[1]) || 1;
+                            }
+                            if (extractLength >= 50) {
+                                return sendMessage("Why don't you just... read the book?");
+                            }
+                            let result = randomText(book, extractLength);
+                            return sendMessage(result, false, { split: { char: ' ' } });
+                        } else if (command === "ask") {
+                            if (!args.length) {
+                                return sendMessage("You're not giving me much to work with here.");
+                            }
+                            // Responds with a randomised yes or no
+                            return sendMessage(Math.random() >= 0.5 ? 'yes.' : 'no.', true);
+                        } else if (command === "help") {
+                            // Responds with a help message
+                            return sendMessage(helpMessage, true);
+                        } else if (command === 'dnd') {
+                            if (args.includes('help')) {
+                                return sendMessage(`To generate a D&D character, use the following command syntax: **${prefix}dnd [level] [race] [class] [primary ability score] [secondary ability score]**. All parameters are optional, and the generator does its best to determine what race and class you mean. Do not leave spaces in race and class names.`);
+                            }
+                            const abilities = ['str', 'dex', 'con', 'int', 'wis', 'cha', 'strength', 'dexterity', 'constitution', 'intelligence', 'wisdom', 'charisma'];
+                            // Extract the number - that's the level
+                            const level = args.filter(s => parseInt(s) == s)[0];
+                            args = args.filter(s => s != level);
+                            const primaryStat = args.filter(s => abilities.includes(s.toLowerCase()))[0];
+                            args = args.filter(s => s != primaryStat);
+                            const secondaryStat = args.filter(s => abilities.includes(s.toLowerCase()))[0];
+                            args = args.filter(s => s != secondaryStat);
+
+                            // console.log({
+                            //     level: level,
+                            //     identifier1: args[0] || undefined,
+                            //     identifier2: args[1] || undefined,
+                            //     primaryStat,
+                            //     secondaryStat,
+                            // });
+                            let character = dndGenerator.generate({
+                                level: level,
+                                identifier1: args[0] || undefined,
+                                identifier2: args[1] || undefined,
+                                primaryStat,
+                                secondaryStat,
+                            });
+                            let abilitiesString = character.abilities.map(o => `**${o.name}** ${o.score} (${o.modifier})`).join("; ");
+                            return sendMessage(`**Name:** ${character.name}\n**Class:** ${character.class}\n**Race:** ${character.race}\n**Level:** ${character.level}\n${abilitiesString}\n**HP:** ${character.hp}\n**Proficieny Bonus:** ${character.proficiencyBonus}\n${character.notes ? `**Notes:** ${character.notes}` : ``}
     `);
-  } else if (command === 'quote') {
-    let quoteId;
-    let serverId = message.guild.id;
-    console.log(serverId);
-    if (args.includes('help')) {
-      return message.channel.send(`To retrieve a random quote, simply type **${prefix}quote**. To save a quote, reply to the message you want to save and type **${prefix}quote save**.`);
-    }
-    if (args.includes('save')) {
-      if (message.reference) {
-        quoteId = message.reference.messageID;
-        message.channel.messages.fetch({ around: quoteId, limit: 1 })
-          .then(quote => {
-            console.log('Yes');
-            console.log(quote);
-            const timestamp = message.createdTimestamp;
-            const quoter_id = message.author.id;
-            const quoter_username = message.author.username;
-            const quoteContent = quote.first().content;
-            const quote_author_id = quote.first().author.id;
-            const quote_author_username = quote.first().author.username;
-            if (!quoteContent || !quoteContent.length) {
-              return message.channel.send("I can't let you do that, Dave.");
-            }
-            db.query(`INSERT INTO quotes (timestamp, server, quoter_id, quoter_username, quote_id, quote, quote_author_id, quote_author_username) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`, [timestamp, serverId, quoter_id, quoter_username, quoteId, quoteContent, quote_author_id, quote_author_username], function (error, results, fields) {
-              if (error) { 
-                console.error(error);
-                return message.channel.send(errorResponses[Math.floor(Math.random() * errorResponses.length)]);
-              }
-              return message.reply('quote saved.');
-            });
-          });
-      } else {
-        return message.channel.send(`To save a new quote, reply to the message you want to save and and type **${prefix}quote save**.`);
+    } else if (command === 'quote') {
+      let quoteId;
+      let serverId = message.guild.id;
+      if (args.includes('help')) {
+        return sendMessage(`To retrieve a random quote, simply type **${prefix}quote**. To save a quote, reply to the message you want to save and type **${prefix}quote save**.`);
       }
-    } else {
-      // We want to see a random quote!
-      db.query(`SELECT * FROM quotes WHERE server = ? ORDER BY RAND() LIMIT 1;`, [serverId], function (error, results, fields) {
+      if (args.includes('save')) {
+        if (message.reference) {
+          quoteId = message.reference.messageID;
+          message.channel.messages.fetch({ around: quoteId, limit: 1 })
+            .then(quote => {
+              const timestamp = message.createdTimestamp;
+              const quoter_id = message.author.id;
+              const quoter_username = message.author.username;
+              const quoteContent = quote.first().content;
+              const quote_author_id = quote.first().author.id;
+              const quote_author_username = quote.first().author.username;
+              if (!quoteContent || !quoteContent.length) {
+                return sendMessage("I can't let you do that, Dave.");
+              }
+              db.query(`INSERT INTO quotes (timestamp, server, quoter_id, quoter_username, quote_id, quote, quote_author_id, quote_author_username) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`, [timestamp, serverId, quoter_id, quoter_username, quoteId, quoteContent, quote_author_id, quote_author_username], function (error, results, fields) {
+                if (error) {
+                  console.error(error);
+                  return sendMessage(errorResponses[Math.floor(Math.random() * errorResponses.length)]);
+                }
+                return sendMessage('quote saved.', true);
+              });
+            });
+        } else {
+          return sendMessage(`To save a new quote, reply to the message you want to save and and type **${prefix}quote save**.`);
+        }
+      } else {
+        // We want to see a random quote!
+        db.query(`SELECT * FROM quotes WHERE server = ? ORDER BY RAND() LIMIT 1;`, [serverId], function (error, results, fields) {
+          if (error) {
+            console.error(error);
+            return sendMessage(errorResponses[Math.floor(Math.random() * errorResponses.length)]);
+          };
+          const result = results[0];
+          if (result) {
+            return sendMessage(`**${result.quote_author_username}** ${result.quote}`);
+          } else {
+            return sendMessage("There are no quotes saved on this server.")
+          }
+          // \n[Saved by @${result.quoter_username}]
+          // [#${result.id}] 
+        });
+      }
+    } else if (command === "mute") {
+      // Mute the bot in this channel - it will still run, but it will never respond
+      db.query(`INSERT INTO channels (channel_id, muted) VALUES(?, ?) ON DUPLICATE KEY UPDATE muted="?"`, [channelId, 1, 1], function (error, results, fields) {
         if (error) {
           console.error(error);
           return message.channel.send(errorResponses[Math.floor(Math.random() * errorResponses.length)]);
         };
-        const result = results[0];
-        if (result) {
-          return message.channel.send(`**@${result.quote_author_username}** ${result.quote}`);
-        } else {
-          return message.channel.send("There are no quotes saved on this server.")
-        }
-        // \n[Saved by @${result.quoter_username}]
-        // [#${result.id}] 
+        return message.channel.send(`LiamBot is now muted in **${message.channel.name}**. To unmute LiamBot, type **${prefix}unmute**.`);
+      });
+    } else if (command === "unmute") {
+      // Mute the bot in this channel - it will still run, but it will never respond
+      db.query(`INSERT INTO channels (channel_id, muted) VALUES(?, ?) ON DUPLICATE KEY UPDATE muted="?"`, [channelId, 0, 0], function (error, results, fields) {
+        if (error) {
+          console.error(error);
+          return message.channel.send(errorResponses[Math.floor(Math.random() * errorResponses.length)]);
+        };
+        return message.channel.send(`LiamBot is now unmuted in **${message.channel.name}**. To mute LiamBot, type **${prefix}mute**.`);
       });
     }
-  }
-});
+  }); // End muted DB check
+}); // End event
 
 client.login(process.env.TOKEN);
