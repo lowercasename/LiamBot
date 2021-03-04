@@ -7,6 +7,7 @@ const tinytext = require('tiny-text');
 
 const hobbit = require('./corpora/hobbit.js');
 const hhgttg = require('./corpora/hhgttg.js');
+const lotr = require('./corpora/lotr.js');
 const dndGenerator = require('./dndgen.js');
 
 dotenv.config();
@@ -56,6 +57,9 @@ const randomText = (text, length = 1) => {
         case 'hhgttg':
             source = hhgttg.text;
             break;
+        case 'lotr':
+            source = lotr.text;
+            break;
         default:
             return false;
     }
@@ -94,7 +98,7 @@ const errorResponses = [
 
 const prefix = "$";
 
-const helpMessage = `Don't worry human buddy, I've got you. My command prefix is **${prefix}**, so start your message with that. Commands I support are:\n**${prefix}help** (to see this help text)\n**${prefix}roll/${prefix}r [dice syntax]** (to roll dice)\n**${prefix}book [title] [number]** (for [number] of sentences from our library of books, current titles are 'hobbit' and 'hhgttg')\n**${prefix}dnd** (to generate D&D characters; type **${prefix}dnd help** for syntax)\n**${prefix}quote** (for quotes; type **${prefix}quote help** for syntax)\n**${prefix}ask [question]** (to ask me yes/no questions)\n**${prefix}yell [text]** (to annoy everyone)\n**${prefix}whisper [text]** (kawaii ne)`;
+const helpMessage = `Don't worry human buddy, I've got you. My command prefix is **${prefix}**, so start your message with that. Commands I support are:\n**${prefix}help** (to see this help text)\n**${prefix}roll/${prefix}r [dice syntax]** (to roll dice)\n**${prefix}book [title] [number]** (for [number] of sentences from our library of books, current titles are 'hobbit', 'lotr', and 'hhgttg')\n**${prefix}dnd** (to generate D&D characters; type **${prefix}dnd help** for syntax)\n**${prefix}quote** (for quotes; type **${prefix}quote help** for syntax)\n**${prefix}ask [question]** (to ask me yes/no questions)\n**${prefix}yell [text]** (to annoy everyone)\n**${prefix}whisper [text]** (kawaii ne)`;
 
 client.on('ready', async() => {
     console.log(`Logged in as ${client.user.tag}!`);
@@ -225,12 +229,12 @@ client.on('message', async message => {
                 return message.channel.send(lotrAPICall);
             } else if (command === "book") {
                 // Set up the length of our extract
-                let validBooks = ["hobbit", "hhgttg"];
+                let validBooks = ["hobbit", "hhgttg", "lotr"];
                 let extractLength, book;
                 if (!args.length) {
                     return message.channel.send("Pick a book to read from (hobbit or hhgttg).")
                 } else {
-                    book = validBooks.includes(args[0]) ? args[0] : 'hobbit';
+                    book = validBooks.includes(args[0]) ? args[0] : validBooks[Math.floor(Math.random() * validBooks.length)];
                     extractLength = parseInt(args[1]) || 1;
                 }
                 if (extractLength >= 50) {
