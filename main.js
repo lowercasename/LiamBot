@@ -41,7 +41,7 @@ const weightedRandom = (weight) => {
     }
 }
 
-const lotr = () => {
+const lotrAPI = () => {
     return axios.get('https://the-one-api.dev/v2/quote', { headers: { 'Authorization': `Bearer ${process.env.LOTR}` } })
         .then(response => {
             return response.data.docs[Math.floor(Math.random() * response.data.docs.length)].dialog;
@@ -225,7 +225,7 @@ client.on('message', async message => {
                 const whisperOutput = `${tinytext(whisperInput.toLowerCase())}`;
                 return message.channel.send(whisperOutput);
             } else if (command === "lotr") {
-                const lotrAPICall = await lotr();
+                const lotrAPICall = await lotrAPI();
                 return message.channel.send(lotrAPICall);
             } else if (command === "book") {
                 // Set up the length of our extract
