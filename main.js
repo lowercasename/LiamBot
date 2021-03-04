@@ -349,7 +349,7 @@ client.on('message', async message => {
           };
           const result = results[0];
           if (result) {
-            return sendMessage(`**${result.quote_author_username}** ${result.quote}`);
+            return sendMessage(`**<${result.quote_author_username}>** ${result.quote}`);
           } else {
             return sendMessage("There are no quotes saved on this server.")
           }
