@@ -163,11 +163,11 @@ client.on('message', async message => {
                                     return sendMessage("You rang?");
                                 } else if (lmsg.includes("remind me of the babe")) {
                                     return sendMessage("What babe?");
-                                } else if (lmsg.startsWith("the babe with the power")) {
+                                } else if (lmsg.includes("the babe with the power")) {
                                     return sendMessage("What power?");
-                                } else if (lmsg.startsWith("the power of voodoo")) {
+                                } else if (lmsg.includes("the power of voodoo")) {
                                     return sendMessage("Who do?");
-                                } else if (lmsg.startsWith("you do")) {
+                                } else if (lmsg.includes("you do")) {
                                     return sendMessage("Do what?");
                                 } else if (lmsg.includes("birds")) {
                                     if (Math.random() >= 0.25) {
