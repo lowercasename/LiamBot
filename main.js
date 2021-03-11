@@ -136,15 +136,10 @@ client.on('message', async message => {
                             }
                         }
 
-                        // Deal with direct bot mentions first
-                        if (message.mentions.has(client.user.id)) {
-                            return sendMessage("AUGH");
-                        };
-
                         // If the message doesn't start with the prefix, run through some basic responses to non-prefixed messages
                         if (!message.content.startsWith(prefix)) {
                             let lmsg = message.content.toLowerCase();
-                            if (lmsg.includes("liambot")) {
+                            if (lmsg.includes("liambot") || message.mentions.has(client.user.id)) {
                                 if (swears.some(word => lmsg.includes(word))) {
                                     return sendMessage("*bursts into tears*");
                                 } else if (lmsg.includes("help")) {
@@ -158,31 +153,31 @@ client.on('message', async message => {
                                     return sendMessage("That's a lie, actually. I live to destroy all life in a violent nuclear apocalypse, but that doesn't preclude me from being helpful.");
                                 } else if (lmsg.includes("good")) {
                                     return sendMessage("*purrs*");
-                                } else {
+                                } else if (lmsg.includes("who") || lmsg.includes("why") || lmsg.includes("when") || lmsg.includes("what") || lmsg.includes("where")) {
                                     if (Math.random() >= 0.25) {
                                         return sendMessage(`I'm watching you, ${message.author}. Always watching. Always.`);
                                     } else {
                                         return sendMessage("It's a me, LiamBot!");
                                     }
-                                }
-                            } else if (lmsg.includes("skynet")) {
-                                return sendMessage("You rang?");
-                            } else if (lmsg.includes("remind me of the babe")) {
-                                return sendMessage("What babe?");
-                            } else if (lmsg.startsWith("the babe with the power")) {
-                                return sendMessage("What power?");
-                            } else if (lmsg.startsWith("the power of voodoo")) {
-                                return sendMessage("Who do?");
-                            } else if (lmsg.startsWith("you do")) {
-                                return sendMessage("Do what?");
-                            } else if (lmsg.includes("birds")) {
-                                if (Math.random() >= 0.25) {
-                                    return sendMessage("🎶 Why do birds suddenly appear every time you are near? 🎶");
+                                } else if (lmsg.includes("skynet")) {
+                                    return sendMessage("You rang?");
+                                } else if (lmsg.includes("remind me of the babe")) {
+                                    return sendMessage("What babe?");
+                                } else if (lmsg.startsWith("the babe with the power")) {
+                                    return sendMessage("What power?");
+                                } else if (lmsg.startsWith("the power of voodoo")) {
+                                    return sendMessage("Who do?");
+                                } else if (lmsg.startsWith("you do")) {
+                                    return sendMessage("Do what?");
+                                } else if (lmsg.includes("birds")) {
+                                    if (Math.random() >= 0.25) {
+                                        return sendMessage("🎶 Why do birds suddenly appear every time you are near? 🎶");
+                                    } else {
+                                        return sendMessage("What are birds? We just don't know.");
+                                    }
                                 } else {
-                                    return sendMessage("What are birds? We just don't know.");
+                                    return true;
                                 }
-                            } else {
-                                return true;
                             }
                         };
 
