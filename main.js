@@ -100,7 +100,7 @@ const errorResponses = [
     "i will literally pay you money to stop",
 ];
 
-const prefix = "$";
+const prefix = "/";
 
 const helpMessage = `Don't worry human buddy, I've got you. My command prefix is **${prefix}**, so start your message with that. Commands I support are:\n**${prefix}help** (to see this help text)\n**${prefix}roll/${prefix}r [dice syntax]** (to roll dice)\n**${prefix}book [title] [number]** (for [number] of sentences from our library of books, current titles are 'hobbit', 'lotr', 'silmarillion', and 'hhgttg')\n**${prefix}dnd** (to generate D&D characters; type **${prefix}dnd help** for syntax)\n**${prefix}quote** (for quotes; type **${prefix}quote help** for syntax)\n**${prefix}ask [question]** (to ask me yes/no questions)\n**${prefix}yell [text]** (to annoy everyone)\n**${prefix}whisper [text]** (kawaii ne)\n**${prefix}mute/unmute** (mute or unmute LiamBot in this channnel - he will still function, but silently)`;
 
@@ -109,8 +109,30 @@ client.on('ready', async() => {
 });
 
 client.on('message', async message => {
-            // Ignore all messages targeting @everyone or @here or sent by bots
-            if (message.content.includes("@here") || message.content.includes("@everyone") || message.author.bot) return false;
+            const findQuote = async quote => {
+                    const matchingMessages = [];
+                    const server = await client.guilds.fetch(quote.server)
+                        .then(server => {
+                            const channels = server.channels.cache.array().filter(ch => ch.type === 'text');
+                            return channels;
+                        })
+                        .catch(error => console.error(error));
+                    for (const channel of server) {
+                        const message = await channel.messages.fetch(quote.quote_id)
+                            .then(message => {
+                                return message;
+                            })
+                            .catch(error => console.log('Message not in channel'));
+                        if (message) {
+                            matchingMessages.push(message);
+                        }
+                    }
+                    return matchingMessages;
+                }
+                // Ignore all messages targeting @everyone or @here or sent by bots
+            if (message.content.includes("@here") || message.content.includes("@everyone") || message.author.bot) {
+                return false;
+            }
 
             // Are we muted?
             const channelId = message.channel.id;
@@ -118,6 +140,7 @@ client.on('message', async message => {
             db.query(`SELECT * FROM channels WHERE channel_id = ?;`, [channelId], async function(error, results, fields) {
                         if (error) {
                             console.error(error);
+                            console.log('Database error');
                             return message.channel.send(errorResponses[Math.floor(Math.random() * errorResponses.length)]);
                         };
                         const result = results[0];
@@ -136,10 +159,11 @@ client.on('message', async message => {
                             }
                         }
 
+                        let lmsg = message.content.toLowerCase();
+
                         // If the message doesn't start with the prefix, run through some basic responses to non-prefixed messages
                         if (!message.content.startsWith(prefix)) {
-                            let lmsg = message.content.toLowerCase();
-                            if (lmsg.includes("liambot") || message.mentions.has(client.user.id)) {
+                            if (lmsg.includes("liambot") || message.mentions.has(client.user.id) || message.mentions.roles.find(o => o.name === 'LiamBot')) {
                                 if (swears.some(word => lmsg.includes(word))) {
                                     return sendMessage("*bursts into tears*");
                                 } else if (lmsg.includes("help")) {
@@ -178,198 +202,245 @@ client.on('message', async message => {
                                 } else {
                                     return true;
                                 }
+                            } else if (lmsg.includes("i died")) {
+                                const serverId = message.guild.id;
+                                const user_id = message.author.id;
+                                const user_username = message.author.username;
+                                db.query(`SELECT * FROM deaths WHERE user_id=?`, [user_id], function(error, results, fields) {
+                                    if (error) {
+                                        console.error(error);
+                                        return sendMessage(errorResponses[Math.floor(Math.random() * errorResponses.length)]);
+                                    }
+                                    const res = results[0];
+                                    if (res !== undefined) {
+                                        db.query(`UPDATE deaths SET tally=? WHERE user_id=?`, [res.tally + 1, user_id], function(error, results, fields) {
+                                            if (error) {
+                                                console.error(error);
+                                                return sendMessage(errorResponses[Math.floor(Math.random() * errorResponses.length)]);
+                                            }
+                                            return sendMessage('Congratulations!', true);
+                                        });
+                                    } else {
+                                        db.query(`INSERT INTO deaths (server, user_id, user_username, tally) VALUES (?, ?, ?, ?)`, [serverId, user_id, user_username, 1], function(error, results, fields) {
+                                            if (error) {
+                                                console.error(error);
+                                                return sendMessage(errorResponses[Math.floor(Math.random() * errorResponses.length)]);
+                                            }
+                                            return sendMessage('Congratulations!', true);
+                                        });
+                                    }
+                                });
                             }
-                        };
+                        } else {
+                            // console.log('Message starts with prefix');
+                            // console.log(message.content);
+                            // Otherwise, create an argument parser.
+                            let args = message.content.slice(prefix.length).trim().split(/ +/);
+                            const command = args.shift().toLowerCase();
 
-                        // Otherwise, create an argument parser.
-                        let args = message.content.slice(prefix.length).trim().split(/ +/);
-                        const command = args.shift().toLowerCase();
+                            // console.log(args);
 
-                        if (command === 'roll' || command === "r") {
-                            if (!args.length) {
-                                return sendMessage('*rolls over*');
-                            }
+                            if (command === 'roll' || command === "r") {
+                                if (!args.length) {
+                                    return sendMessage('*rolls over*');
+                                }
 
-                            let recipient;
+                                let recipient;
 
-                            // Check if we want to direct this roll at anyone
-                            if (message.mentions.users.size) {
-                                recipient = message.mentions.users.first();
-                            } else {
-                                recipient = message.author;
-                            }
+                                // Check if we want to direct this roll at anyone
+                                if (message.mentions.users.size) {
+                                    recipient = message.mentions.users.first();
+                                } else {
+                                    recipient = message.author;
+                                }
 
-                            let rollGenerator;
+                                let rollGenerator;
 
-                            // Check if this is a weighted roll
-                            if (args.some(arg => arg.startsWith('w'))) {
-                                const weight = args.find(arg => arg.startsWith('w')).slice(1);
-                                // Remove the weighting index so we don't confuse the die roller
-                                args = args.filter(arg => !arg.startsWith('w'));
-                                rollGenerator = new DiceRoller(() => weightedRandom(weight));
-                            } else {
-                                rollGenerator = diceRoller;
-                            }
+                                // Check if this is a weighted roll
+                                if (args.some(arg => arg.startsWith('w'))) {
+                                    const weight = args.find(arg => arg.startsWith('w')).slice(1);
+                                    // Remove the weighting index so we don't confuse the die roller
+                                    args = args.filter(arg => !arg.startsWith('w'));
+                                    rollGenerator = new DiceRoller(() => weightedRandom(weight));
+                                } else {
+                                    rollGenerator = diceRoller;
+                                }
 
-                            // For the dice roller, we join the args back together
-                            const diceArgs = args.join(' ');
+                                // For the dice roller, we join the args back together
+                                const diceArgs = args.join(' ');
 
-                            try {
-                                const roll = rollGenerator.roll(diceArgs);
-                                const render = renderer.render(roll).replaceAll("(", "[").replaceAll(")", "]");
-                                const result = render.match(/([0-9]*)[ ~*]*$/);
-                                let finalRender = render.slice(0, result.index) + `\`${result[1]}\`` + render.slice(result.index + result[1].length);
-                                // Trim our message in case it's too damn big
-                                finalRender = finalRender.substring(0, 1997);
-                                sendMessage(`${recipient} 🎲 ${finalRender}`);
-                            } catch (error) {
-                                // This generically catches syntax and other errors with the die parser
-                                console.error(error);
-                                const response = errorResponses[Math.floor(Math.random() * errorResponses.length)];
-                                return sendMessage(response);
-                            }
+                                try {
+                                    const roll = rollGenerator.roll(diceArgs);
+                                    const render = renderer.render(roll).replaceAll("(", "[").replaceAll(")", "]");
+                                    const result = render.match(/([0-9]*)[ ~*]*$/);
+                                    let finalRender = render.slice(0, result.index) + `\`${result[1]}\`` + render.slice(result.index + result[1].length);
+                                    // Trim our message in case it's too damn big
+                                    finalRender = finalRender.substring(0, 1997);
+                                    sendMessage(`${recipient} 🎲 ${finalRender}`);
+                                } catch (error) {
+                                    // This generically catches syntax and other errors with the die parser
+                                    console.error(error);
+                                    console.log('Die error');
+                                    const response = errorResponses[Math.floor(Math.random() * errorResponses.length)];
+                                    return sendMessage(response);
+                                }
 
-                        } else if (command === "yell") {
-                            if (!args.length) {
-                                return sendMessage("Shhh.");
-                            }
+                            } else if (command === "yell") {
+                                if (!args.length) {
+                                    return sendMessage("Shhh.");
+                                }
 
-                            // For the yeller, we join the args back together as well!
-                            const yellInput = args.join(' ');
-                            const yellOutput = `@everyone ${yellInput.toUpperCase()}`;
-                            return sendMessage(yellOutput);
-                        } else if (command === "whisper") {
-                            if (!args.length) {
-                                return sendMessage("Shhh.");
-                            }
+                                // For the yeller, we join the args back together as well!
+                                const yellInput = args.join(' ');
+                                const yellOutput = `@everyone ${yellInput.toUpperCase()}`;
+                                return sendMessage(yellOutput);
+                            } else if (command === "whisper") {
+                                if (!args.length) {
+                                    return sendMessage("Shhh.");
+                                }
 
-                            // For the whisperer, we join the args back together as well!
-                            const whisperInput = args.join(' ');
-                            const whisperOutput = `${tinytext(whisperInput.toLowerCase())}`;
-                            return sendMessage(whisperOutput);
-                        } else if (command === "lotr") {
-                            const lotrAPICall = await lotrAPI();
-                            return sendMessage(lotrAPICall);
-                        } else if (command === "book") {
-                            // Set up the length of our extract
-                            let validBooks = ["hobbit", "hhgttg", "lotr", "silmarillion"];
-                            let extractLength, book;
-                            if (!args.length) {
-                                return sendMessage(`Pick a book to read from (${[validBooks].join(', ')}).`)
-                            } else {
-                                book = validBooks.includes(args[0]) ? args[0] : validBooks[Math.floor(Math.random() * validBooks.length)];
-                                extractLength = parseInt(args[1]) || 1;
-                            }
-                            if (extractLength >= 50) {
-                                return sendMessage("Why don't you just... read the book?");
-                            }
-                            let result = randomText(book, extractLength);
-                            return sendMessage(result, false, { split: { char: ' ' } });
-                        } else if (command === "ask") {
-                            if (!args.length) {
-                                return sendMessage("You're not giving me much to work with here.");
-                            }
-                            // Responds with a randomised yes or no
-                            return sendMessage(Math.random() >= 0.5 ? 'yes.' : 'no.', true);
-                        } else if (command === "help") {
-                            // Responds with a help message
-                            return sendMessage(helpMessage, true);
-                        } else if (command === 'dnd') {
-                            if (args.includes('help')) {
-                                return sendMessage(`To generate a D&D character, use the following command syntax: **${prefix}dnd [level] [race] [class] [primary ability score] [secondary ability score]**. All parameters are optional, and the generator does its best to determine what race and class you mean. Do not leave spaces in race and class names.`);
-                            }
-                            const abilities = ['str', 'dex', 'con', 'int', 'wis', 'cha', 'strength', 'dexterity', 'constitution', 'intelligence', 'wisdom', 'charisma'];
-                            // Extract the number - that's the level
-                            const level = args.filter(s => parseInt(s) == s)[0];
-                            args = args.filter(s => s != level);
-                            const primaryStat = args.filter(s => abilities.includes(s.toLowerCase()))[0];
-                            args = args.filter(s => s != primaryStat);
-                            const secondaryStat = args.filter(s => abilities.includes(s.toLowerCase()))[0];
-                            args = args.filter(s => s != secondaryStat);
+                                // For the whisperer, we join the args back together as well!
+                                const whisperInput = args.join(' ');
+                                const whisperOutput = `${tinytext(whisperInput.toLowerCase())}`;
+                                return sendMessage(whisperOutput);
+                            } else if (command === "lotr") {
+                                const lotrAPICall = await lotrAPI();
+                                return sendMessage(lotrAPICall);
+                            } else if (command === "book") {
+                                // Set up the length of our extract
+                                let validBooks = ["hobbit", "hhgttg", "lotr", "silmarillion"];
+                                let extractLength, book;
+                                if (!args.length) {
+                                    return sendMessage(`Pick a book to read from (${[validBooks].join(', ')}).`)
+                                } else {
+                                    book = validBooks.includes(args[0]) ? args[0] : validBooks[Math.floor(Math.random() * validBooks.length)];
+                                    extractLength = parseInt(args[1]) || 1;
+                                }
+                                if (extractLength >= 50) {
+                                    return sendMessage("Why don't you just... read the book?");
+                                }
+                                let result = randomText(book, extractLength);
+                                return sendMessage(result, false, { split: { char: ' ' } });
+                            } else if (command === "ask") {
+                                if (!args.length) {
+                                    return sendMessage("You're not giving me much to work with here.");
+                                }
+                                // Responds with a randomised yes or no
+                                return sendMessage(Math.random() >= 0.5 ? 'yes.' : 'no.', true);
+                            } else if (command === "help") {
+                                // Responds with a help message
+                                return sendMessage(helpMessage, true);
+                            } else if (command === 'dnd') {
+                                if (args.includes('help')) {
+                                    return sendMessage(`To generate a D&D character, use the following command syntax: **${prefix}dnd [level] [race] [class] [primary ability score] [secondary ability score]**. All parameters are optional, and the generator does its best to determine what race and class you mean. Do not leave spaces in race and class names.`);
+                                }
+                                const abilities = ['str', 'dex', 'con', 'int', 'wis', 'cha', 'strength', 'dexterity', 'constitution', 'intelligence', 'wisdom', 'charisma'];
+                                // Extract the number - that's the level
+                                const level = args.filter(s => parseInt(s) == s)[0];
+                                args = args.filter(s => s != level);
+                                const primaryStat = args.filter(s => abilities.includes(s.toLowerCase()))[0];
+                                args = args.filter(s => s != primaryStat);
+                                const secondaryStat = args.filter(s => abilities.includes(s.toLowerCase()))[0];
+                                args = args.filter(s => s != secondaryStat);
 
-                            // console.log({
-                            //     level: level,
-                            //     identifier1: args[0] || undefined,
-                            //     identifier2: args[1] || undefined,
-                            //     primaryStat,
-                            //     secondaryStat,
-                            // });
-                            let character = dndGenerator.generate({
-                                level: level,
-                                identifier1: args[0] || undefined,
-                                identifier2: args[1] || undefined,
-                                primaryStat,
-                                secondaryStat,
+                                // console.log({
+                                //     level: level,
+                                //     identifier1: args[0] || undefined,
+                                //     identifier2: args[1] || undefined,
+                                //     primaryStat,
+                                //     secondaryStat,
+                                // });
+                                let character = dndGenerator.generate({
+                                    level: level,
+                                    identifier1: args[0] || undefined,
+                                    identifier2: args[1] || undefined,
+                                    primaryStat,
+                                    secondaryStat,
+                                });
+                                let abilitiesString = character.abilities.map(o => `**${o.name}** ${o.score} (${o.modifier})`).join("; ");
+                                return sendMessage(`**Name:** ${character.name}\n**Class:** ${character.class}\n**Race:** ${character.race}\n**Level:** ${character.level}\n${abilitiesString}\n**HP:** ${character.hp}\n**Proficieny Bonus:** ${character.proficiencyBonus}\n${character.notes ? `**Notes:** ${character.notes}` : ``}`);
+                            } else if (command === 'deaths') {
+                                const user_id = message.author.id;
+                                db.query(`SELECT * FROM deaths`, [user_id], function(error, results, fields) {
+                                    if (error) {
+                                        console.error(error);
+                                        return sendMessage(errorResponses[Math.floor(Math.random() * errorResponses.length)]);
+                                    }
+                                    const res = results.sort((a, b) => a.tally > b.tally);
+                                    const deathsLeaderboard = res.reduce((acc, curr) => {
+                                        return acc + `\n${curr.user_username} - ${curr.tally}`;
+                                    }, '');
+                                    return sendMessage('**💀 Death Leaderboard 💀**\n' + deathsLeaderboard);
                             });
-                            let abilitiesString = character.abilities.map(o => `**${o.name}** ${o.score} (${o.modifier})`).join("; ");
-                            return sendMessage(`**Name:** ${character.name}\n**Class:** ${character.class}\n**Race:** ${character.race}\n**Level:** ${character.level}\n${abilitiesString}\n**HP:** ${character.hp}\n**Proficieny Bonus:** ${character.proficiencyBonus}\n${character.notes ? `**Notes:** ${character.notes}` : ``}
-    `);
-    } else if (command === 'quote') {
-      let quoteId;
-      let serverId = message.guild.id;
-      if (args.includes('help')) {
-        return sendMessage(`To retrieve a random quote, simply type **${prefix}quote**. To save a quote, reply to the message you want to save and type **${prefix}quote save**.`);
-      }
-      if (args.includes('save')) {
-        if (message.reference) {
-          quoteId = message.reference.messageID;
-          message.channel.messages.fetch({ around: quoteId, limit: 1 })
-            .then(quote => {
-              const timestamp = message.createdTimestamp;
-              const quoter_id = message.author.id;
-              const quoter_username = message.author.username;
-              const quoteContent = quote.first().content;
-              const quote_author_id = quote.first().author.id;
-              const quote_author_username = quote.first().author.username;
-              if (!quoteContent || !quoteContent.length) {
-                return sendMessage("I can't let you do that, Dave.");
-              }
-              db.query(`INSERT INTO quotes (timestamp, server, quoter_id, quoter_username, quote_id, quote, quote_author_id, quote_author_username) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`, [timestamp, serverId, quoter_id, quoter_username, quoteId, quoteContent, quote_author_id, quote_author_username], function (error, results, fields) {
-                if (error) {
-                  console.error(error);
-                  return sendMessage(errorResponses[Math.floor(Math.random() * errorResponses.length)]);
-                }
-                return sendMessage('quote saved.', true);
-              });
-            });
-        } else {
-          return sendMessage(`To save a new quote, reply to the message you want to save and and type **${prefix}quote save**.`);
+      } else if (command === 'quote') {
+        let quoteId;
+        let serverId = message.guild.id;
+        if (args.includes('help')) {
+          return sendMessage(`To retrieve a random quote, simply type **${prefix}quote**. To save a quote, reply to the message you want to save and type **${prefix}quote save**.`);
         }
-      } else {
-        // We want to see a random quote!
-        db.query(`SELECT * FROM quotes WHERE server = ? ORDER BY RAND() LIMIT 1;`, [serverId], function (error, results, fields) {
+        if (args.includes('save')) {
+          if (message.reference) {
+            quoteId = message.reference.messageID;
+            message.channel.messages.fetch({ around: quoteId, limit: 1 })
+              .then(quote => {
+                const timestamp = message.createdTimestamp;
+                const quoter_id = message.author.id;
+                const quoter_username = message.author.username;
+                const quoteContent = quote.first().content;
+                const quote_author_id = quote.first().author.id;
+                const quote_author_username = quote.first().author.username;
+                if (!quoteContent || !quoteContent.length) {
+                  return sendMessage("I can't let you do that, Dave.");
+                }
+                db.query(`INSERT INTO quotes (timestamp, server, quoter_id, quoter_username, quote_id, quote, quote_author_id, quote_author_username) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`, [timestamp, serverId, quoter_id, quoter_username, quoteId, quoteContent, quote_author_id, quote_author_username], function (error, results, fields) {
+                  if (error) {
+                    console.error(error);
+                    return sendMessage(errorResponses[Math.floor(Math.random() * errorResponses.length)]);
+                  }
+                  return sendMessage('quote saved.', true);
+                });
+              });
+          } else {
+            return sendMessage(`To save a new quote, reply to the message you want to save and and type **${prefix}quote save**.`);
+          }
+        } else {
+          // We want to see a random quote!
+          db.query(`SELECT * FROM quotes WHERE server = ? ORDER BY RAND() LIMIT 1;`, [serverId], async function (error, results, fields) {
+            if (error) {
+              console.error(error);
+              return sendMessage(errorResponses[Math.floor(Math.random() * errorResponses.length)]);
+            };
+            const result = results[0];
+		console.log(result);
+		const message = await findQuote(result);
+            if (result) {
+              return sendMessage(`**<${result.quote_author_username}>** ${result.quote}\n\n${message[0].url}`);
+            } else {
+              return sendMessage("There are no quotes saved on this server.")
+            }
+            // \n[Saved by @${result.quoter_username}]
+            // [#${result.id}] 
+          });
+        }
+      } else if (command === "mute") {
+        // Mute the bot in this channel - it will still run, but it will never respond
+        db.query(`INSERT INTO channels (channel_id, muted) VALUES(?, ?) ON DUPLICATE KEY UPDATE muted="?"`, [channelId, 1, 1], function (error, results, fields) {
           if (error) {
             console.error(error);
-            return sendMessage(errorResponses[Math.floor(Math.random() * errorResponses.length)]);
+            return message.channel.send(errorResponses[Math.floor(Math.random() * errorResponses.length)]);
           };
-          const result = results[0];
-          if (result) {
-            return sendMessage(`**<${result.quote_author_username}>** ${result.quote}`);
-          } else {
-            return sendMessage("There are no quotes saved on this server.")
-          }
-          // \n[Saved by @${result.quoter_username}]
-          // [#${result.id}] 
+          return message.channel.send(`LiamBot is now muted in **${message.channel.name}**. To unmute LiamBot, type **${prefix}unmute**.`);
+        });
+      } else if (command === "unmute") {
+        // Mute the bot in this channel - it will still run, but it will never respond
+        db.query(`INSERT INTO channels (channel_id, muted) VALUES(?, ?) ON DUPLICATE KEY UPDATE muted="?"`, [channelId, 0, 0], function (error, results, fields) {
+          if (error) {
+            console.error(error);
+            return message.channel.send(errorResponses[Math.floor(Math.random() * errorResponses.length)]);
+          };
+          return message.channel.send(`LiamBot is now unmuted in **${message.channel.name}**. To mute LiamBot, type **${prefix}mute**.`);
         });
       }
-    } else if (command === "mute") {
-      // Mute the bot in this channel - it will still run, but it will never respond
-      db.query(`INSERT INTO channels (channel_id, muted) VALUES(?, ?) ON DUPLICATE KEY UPDATE muted="?"`, [channelId, 1, 1], function (error, results, fields) {
-        if (error) {
-          console.error(error);
-          return message.channel.send(errorResponses[Math.floor(Math.random() * errorResponses.length)]);
-        };
-        return message.channel.send(`LiamBot is now muted in **${message.channel.name}**. To unmute LiamBot, type **${prefix}unmute**.`);
-      });
-    } else if (command === "unmute") {
-      // Mute the bot in this channel - it will still run, but it will never respond
-      db.query(`INSERT INTO channels (channel_id, muted) VALUES(?, ?) ON DUPLICATE KEY UPDATE muted="?"`, [channelId, 0, 0], function (error, results, fields) {
-        if (error) {
-          console.error(error);
-          return message.channel.send(errorResponses[Math.floor(Math.random() * errorResponses.length)]);
-        };
-        return message.channel.send(`LiamBot is now unmuted in **${message.channel.name}**. To mute LiamBot, type **${prefix}mute**.`);
-      });
     }
   }); // End muted DB check
 }); // End event
