@@ -203,32 +203,26 @@ client.on('message', async message => {
                                     return true;
                                 }
                             } else if (lmsg.includes("i died")) {
+                                function extractTextInParentheses(inputString) {
+                                    const regex = /\(([^)]+)\)/;
+                                    const match = inputString.match(regex);
+
+                                    if (match && match.length > 1) {
+                                        return match[1];
+                                    } else {
+                                        return null;
+                                    }
+                                }
                                 const serverId = message.guild.id;
                                 const user_id = message.author.id;
                                 const user_username = message.author.username;
-                                db.query(`SELECT * FROM deaths WHERE user_id=?`, [user_id], function(error, results, fields) {
+                                const reason = extractTextInParentheses(message.content);
+                                db.query(`INSERT INTO deaths (server, user_id, user_username, tally, reason) VALUES (?, ?, ?, ?, ?)`, [serverId, user_id, user_username, 1, reason], function(error, results, fields) {
                                     if (error) {
                                         console.error(error);
                                         return sendMessage(errorResponses[Math.floor(Math.random() * errorResponses.length)]);
                                     }
-                                    const res = results[0];
-                                    if (res !== undefined) {
-                                        db.query(`UPDATE deaths SET tally=? WHERE user_id=?`, [res.tally + 1, user_id], function(error, results, fields) {
-                                            if (error) {
-                                                console.error(error);
-                                                return sendMessage(errorResponses[Math.floor(Math.random() * errorResponses.length)]);
-                                            }
-                                            return sendMessage('Congratulations!', true);
-                                        });
-                                    } else {
-                                        db.query(`INSERT INTO deaths (server, user_id, user_username, tally) VALUES (?, ?, ?, ?)`, [serverId, user_id, user_username, 1], function(error, results, fields) {
-                                            if (error) {
-                                                console.error(error);
-                                                return sendMessage(errorResponses[Math.floor(Math.random() * errorResponses.length)]);
-                                            }
-                                            return sendMessage('Congratulations!', true);
-                                        });
-                                    }
+                                    return sendMessage('Congratulations!', true);
                                 });
                             }
                         } else {
@@ -360,18 +354,59 @@ client.on('message', async message => {
                                 let abilitiesString = character.abilities.map(o => `**${o.name}** ${o.score} (${o.modifier})`).join("; ");
                                 return sendMessage(`**Name:** ${character.name}\n**Class:** ${character.class}\n**Race:** ${character.race}\n**Level:** ${character.level}\n${abilitiesString}\n**HP:** ${character.hp}\n**Proficieny Bonus:** ${character.proficiencyBonus}\n${character.notes ? `**Notes:** ${character.notes}` : ``}`);
                             } else if (command === 'deaths') {
-                                const user_id = message.author.id;
-                                db.query(`SELECT * FROM deaths`, [user_id], function(error, results, fields) {
-                                    if (error) {
-                                        console.error(error);
-                                        return sendMessage(errorResponses[Math.floor(Math.random() * errorResponses.length)]);
+                                if (message.mentions.users && message.mentions.users.size === 0) {
+                                    const user_id = message.author.id;
+                                    db.query(`SELECT * FROM deaths`, [user_id], function(error, results, fields) {
+                                        if (error) {
+                                            console.error(error);
+                                            return sendMessage(errorResponses[Math.floor(Math.random() * errorResponses.length)]);
+                                        }
+                                        const talliedResults = results.reduce((acc, curr) => {
+                                            if (acc?.length && acc.find(existing => existing.user_id === curr.user_id)) {
+                                                const existing = acc.find(existing => existing.user_id === curr.user_id);
+                                                existing.tally += 1;
+                                                return acc;
+                                            } else {
+                                                console.log(acc, curr);
+                                                acc.push(curr);
+                                                return acc;
+                                            }
+                                        }, []);
+                                        const res = talliedResults.sort(({ tally: a }, { tally: b }) => b-a);
+                                        const deathsLeaderboard = res.reduce((acc, curr) => {
+                                            return acc + `\n${curr.user_username} - ${curr.tally}`;
+                                        }, '');
+                                        return sendMessage('**💀 Death Leaderboard 💀**\n' + deathsLeaderboard);
+                                });
+                            } else {
+                                function getRandomObjectsFromArray(array, numberOfObjects) {
+                                    // Make a copy of the array to avoid modifying the original array
+                                    const shuffledArray = array.slice();
+                                
+                                    // Fisher-Yates shuffle algorithm
+                                    for (let i = shuffledArray.length - 1; i > 0; i--) {
+                                        const j = Math.floor(Math.random() * (i + 1));
+                                        [shuffledArray[i], shuffledArray[j]] = [shuffledArray[j], shuffledArray[i]];
                                     }
-                                    const res = results.sort((a, b) => a.tally > b.tally);
-                                    const deathsLeaderboard = res.reduce((acc, curr) => {
-                                        return acc + `\n${curr.user_username} - ${curr.tally}`;
-                                    }, '');
-                                    return sendMessage('**💀 Death Leaderboard 💀**\n' + deathsLeaderboard);
-                            });
+                                
+                                    // Return the selected number of objects from the shuffled array
+                                    return shuffledArray.slice(0, numberOfObjects);
+                                }
+                                const deathsFor = message.mentions.users.values().next().value;
+                                console.log(deathsFor);
+                                    db.query(`SELECT * FROM deaths WHERE user_username=?`, [deathsFor.username], function(error, results, fields) {
+                                        if (error) {
+                                            console.error(error);
+                                            return sendMessage(errorResponses[Math.floor(Math.random() * errorResponses.length)]);
+                                        }
+                                        const res = results.filter(r => r.reason?.length);
+                                        const randomDeaths = getRandomObjectsFromArray(res, 10);
+                                        const deathsList = randomDeaths.reduce((acc, curr) => {
+                                            return acc + `\n- ${curr.reason}`;
+                                        }, '');
+                                        return sendMessage(`**💀 ${randomDeaths.length} Random Deaths For ${deathsFor.username} 💀**\n` + deathsList);
+                                });
+                            }
       } else if (command === 'quote') {
         let quoteId;
         let serverId = message.guild.id;
