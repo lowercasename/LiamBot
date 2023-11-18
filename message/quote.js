@@ -67,11 +67,11 @@ const getQuote = (args, message, db) => {
                     return matchingMessages;
                 }
                 url = message[0].url;
-                db.query(`UPDATE quotes (quote_url) where quote_id = ? (quote_url) VALUES (?)`, [url,message[0].quote_id], function (error, results, fields) {
+                db.query(`UPDATE quotes SET quote_url = ? where quote_id = ?`, [url,message[0].quote_id], function (error, results) {
                     if (error) {
                         console.error(error);
                     };
-                })
+                });
             }
             if (result) {
                 return (`**<${result.quote_author_username}>** ${result.quote}\n\n${url}`);
