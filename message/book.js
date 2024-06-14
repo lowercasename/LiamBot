@@ -1,22 +1,22 @@
-const hobbit = require('./corpora/hobbit.js');
-const hhgttg = require('./corpora/hhgttg.js');
-const lotr = require('./corpora/lotr.js');
-const silmarillion = require('./corpora/silmarillion.js');
+import { text as hobbitText } from '../corpora/hobbit.js';
+import { text as hhgttgText } from '../corpora/hhgttg.js';
+import { text as lotrText } from '../corpora/lotr.js';
+import { text as silmarillionText } from '../corpora/silmarillion.js';
 
 const randomText = (text, length = 1) => {
     let source;
     switch (text) {
         case 'hobbit':
-            source = hobbit.text;
+            source = hobbitText;
             break;
         case 'hhgttg':
-            source = hhgttg.text;
+            source = hhgttgText;
             break;
         case 'lotr':
-            source = lotr.text;
+            source = lotrText;
             break;
         case 'silmarillion':
-            source = silmarillion.text;
+            source = silmarillionText;
             break;
         default:
             return false;
@@ -25,20 +25,19 @@ const randomText = (text, length = 1) => {
     return source.slice(index, index + length).join(" ");
 }
 
-const returnPassage = (args) => {
+export const returnPassage = (message, args) => {
     // Set up the length of our extract
     let validBooks = ["hobbit", "hhgttg", "lotr", "silmarillion"];
     let extractLength, book;
     if (!args.length) {
-        return sendMessage(`Pick a book to read from (${[validBooks].join(', ')}).`)
+        return [`Pick a book to read from (${[validBooks].join(', ')}).`, false];
     } else {
-        book = validBooks.includes(args[0]) ? args[0] : validBooks[Math.floor(Math.random() * validBooks.length)];
         extractLength = parseInt(args[1]) || 1;
-    }
-    if (extractLength >= 50) {
-        return sendMessage("Why don't you just... read the book?");
+        if (extractLength >= 50) {
+            return ["Why don't you just... read the book?", false];
+        }
+        book = validBooks.includes(args[0]) ? args[0] : validBooks[Math.floor(Math.random() * validBooks.length)];
     }
     let result = randomText(book, extractLength);
     return [result, false, { split: { char: ' ' } }];
 };
-module.exports.returnPassage = returnPassage;
