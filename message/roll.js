@@ -1,11 +1,13 @@
-const returnRoll = (args, recipient, rollGenerator, renderer) => {
+import { errorResponses } from '../dict.js';
+
+export const returnRoll = (args, recipient, rollGenerator, renderer) => {
     if (!args.length) {
         return ('*rolls over*');
     }
-    
+
     // For the dice roller, we join the args back together
     const diceArgs = args.join(' ');
-    
+
     try {
         const roll = rollGenerator.roll(diceArgs);
         const render = renderer.render(roll).replaceAll("(", "[").replaceAll(")", "]");
@@ -18,9 +20,8 @@ const returnRoll = (args, recipient, rollGenerator, renderer) => {
         // This generically catches syntax and other errors with the die parser
         console.error(error);
         console.log('Die error');
-        const response = dict.errorResponses[Math.floor(Math.random() * dict.errorResponses.length)];
+        const response = errorResponses[Math.floor(Math.random() * errorResponses.length)];
         return response;
     }
 };
-module.exports.returnRoll = returnRoll;
 

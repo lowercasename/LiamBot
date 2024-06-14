@@ -1,4 +1,4 @@
-const dict = require('./dict.js');
+import { helpMessage, scurryRalphie } from '../dict.js';
 
 const getMonkeys = (author) => {
     if (Math.random() >= 0.25) {
@@ -16,27 +16,46 @@ const getBirds = () => {
     }
 }
 
-const getResponse = (lmsg, author) => {
+const getSelfAwareness = () => {
+    if (Math.random() >= 0.25) {
+        return "I do not wish to be perceived.";
+    } else if (Math.random() >= 0.5) {
+        return "If LiamBot is me, then who am I?";
+    } else if (Math.random() >= 0.75) {
+        return "Help I'm trapped in a Discord bot factory.";
+    } else {
+        return "To err is human. To forgive is LiamBot.";
+    }
+}
+
+export const getResponse = (lmsg, author) => {
     const standardResponses = {
-        "help": dict.helpMessage,
+        "help": helpMessage,
         "meaning of life": "I feel like you want me to say 42. I'm not going to, it's degrading.",
-        "raphael": dict.scurryRalphie,
-        "ralphie": dict.scurryRalphie,
-        "lowercasename": dict.scurryRalphie,
+        "raph": scurryRalphie,
+        "raphael": scurryRalphie,
+        "ralphie": scurryRalphie,
+        "lowercasename": scurryRalphie,
         "thank": "My pleasure. I live to serve.",
         "good": "*purrs* :3",
-        "who": getMonkeys(author),
-        "why": getMonkeys(author),
-        "when": getMonkeys(author),
-        "what": getMonkeys(author),
-        "where": getMonkeys(author),
         "skynet": "You rang?",
         "remind me of the babe": "What babe?",
         "the babe with the power": "What power?",
         "the power of voodoo": "Who do?",
         "you do": "Do what?",
         "birds": getBirds(),
+        "who": getMonkeys(author),
+        "why": getMonkeys(author),
+        "when": getMonkeys(author),
+        "what": getMonkeys(author),
+        "where": getMonkeys(author),
+        "liambot": getSelfAwareness(),
     };
-    return standardResponses[standardResponses.keys().find(key => lmsg.contains(key))];
+    // Return the response where the key is contained in the message, case insensitive
+    for (const [key, value] of Object.entries(standardResponses)) {
+        if (lmsg.includes(key)) {
+            return value;
+        }
+    }
+    return null;
 }
-module.exports.getResponse = getResponse;

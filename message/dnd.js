@@ -1,8 +1,9 @@
-const dndGenerator = require('./dndgen.js');
+import { generate } from '../dndgen.js';
+import { prefix } from '../dict.js';
 
-const doDND = (args) => {
+export const doDND = (args) => {
     if (args.includes('help')) {
-        return sendMessage(`To generate a D&D character, use the following command syntax: **${dict.prefix}dnd [level] [race] [class] [primary ability score] [secondary ability score]**. All parameters are optional, and the generator does its best to determine what race and class you mean. Do not leave spaces in race and class names.`);
+        return `To generate a D&D character, use the following command syntax: **${prefix}dnd [level] [race] [class] [primary ability score] [secondary ability score]**. All parameters are optional, and the generator does its best to determine what race and class you mean. Do not leave spaces in race and class names.`;
     }
     const abilities = ['str', 'dex', 'con', 'int', 'wis', 'cha', 'strength', 'dexterity', 'constitution', 'intelligence', 'wisdom', 'charisma'];
     // Extract the number - that's the level
@@ -20,7 +21,7 @@ const doDND = (args) => {
     //     primaryStat,
     //     secondaryStat,
     // });
-    let character = dndGenerator.generate({
+    let character = generate({
         level: level,
         identifier1: args[0] || undefined,
         identifier2: args[1] || undefined,
@@ -30,4 +31,3 @@ const doDND = (args) => {
     let abilitiesString = character.abilities.map(o => `**${o.name}** ${o.score} (${o.modifier})`).join("; ");
     return (`**Name:** ${character.name}\n**Class:** ${character.class}\n**Race:** ${character.race}\n**Level:** ${character.level}\n${abilitiesString}\n**HP:** ${character.hp}\n**Proficieny Bonus:** ${character.proficiencyBonus}\n${character.notes ? `**Notes:** ${character.notes}` : ``}`);
 }
-module.exports.doDND = doDND;
