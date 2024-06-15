@@ -18,7 +18,8 @@ const db = createConnection({
     host: 'localhost',
     user: 'root',
     password: process.env.MYSQL,
-    database: 'liambot'
+    database: 'liambot',
+    charset: 'utf8mb4',
 });
 
 db.connect();
