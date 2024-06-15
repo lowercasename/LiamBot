@@ -1,7 +1,7 @@
-const { DiceRoller, DiscordRollRenderer } = require('dice-roller-parser');
-const diceRoller = new DiceRoller();
+import DiceRoller from '@3d-dice/dice-roller-parser';
+const diceRoller = new DiceRoller.DiceRoller();
 
-const firstNames = first_names = ["Abigayl", "Aebria", "Aeobreia", "Breia", "Aedria", "Aodreia", "Dreia", "Aeliya", "Aliya",
+const firstNames = ["Abigayl", "Aebria", "Aeobreia", "Breia", "Aedria", "Aodreia", "Dreia", "Aeliya", "Aliya",
   "Aella", "Aemilya", "Aemma", "Aemy", "Amy", "Ami", "Aeria", "Arya", "Aeva",
   "Aevelyn", "Evylann", "Alaexa", "Alyxa", "Alina", "Aelina", "Aelinea", "Allisann", "Allysann",
   "Alyce", "Alys", "Alysea", "Alyssia", "Aelyssa", "Amelya", "Maelya", "Andreya", "Aendrea",
@@ -549,9 +549,9 @@ const getRaceAndClass = (identifier1, identifier2) => {
   return { raceObject, classObject };
 }
 
-const generate = ({ identifier1, identifier2, primaryStat, secondaryStat, level }) => {
+export const generate = ({ identifier1, identifier2, primaryStat, secondaryStat, level }) => {
   let character = {};
-  let {raceObject, classObject} = getRaceAndClass(identifier1, identifier2);
+  let { raceObject, classObject } = getRaceAndClass(identifier1, identifier2);
 
   level = parseInt(level);
   if (!level || typeof level !== 'number') {
@@ -578,9 +578,9 @@ const generate = ({ identifier1, identifier2, primaryStat, secondaryStat, level 
     }
     // Same for secondary stat
     else if (secondaryStat &&
-        !statOrder.includes(secondaryStat.toUpperCase().substring(0, 3)) &&
-        typeof secondaryStat === 'string' &&
-        abilities.includes(secondaryStat.toUpperCase().substring(0, 3))
+      !statOrder.includes(secondaryStat.toUpperCase().substring(0, 3)) &&
+      typeof secondaryStat === 'string' &&
+      abilities.includes(secondaryStat.toUpperCase().substring(0, 3))
     ) {
       statOrder.push(secondaryStat.toUpperCase().substring(0, 3));
     }
@@ -601,7 +601,7 @@ const generate = ({ identifier1, identifier2, primaryStat, secondaryStat, level 
 
   console.log(statOrder);
 
-  const scores = abilities.map(s => {
+  const scores = abilities.map(() => {
     return diceRoller.rollValue('4d6dl');
   })
     .sort((a, b) => b - a)
@@ -641,5 +641,3 @@ const generate = ({ identifier1, identifier2, primaryStat, secondaryStat, level 
 
   return character;
 }
-
-module.exports.generate = generate;

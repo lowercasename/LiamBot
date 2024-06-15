@@ -1,14 +1,15 @@
 {
-  "name": "LiamBot",
+  "name": "liam-bot",
   "version": "1.0.0",
   "description": "A Discord Bot",
   "main": "main.js",
   "author": "Raphael Kabo",
   "license": "MIT",
+  "type": "module",
   "dependencies": {
+    "@3d-dice/dice-roller-parser": "^0.2.6",
     "axios": "^0.21.1",
-    "dice-roller-parser": "^0.1.8",
-    "discord.js": "^12.5.1",
+    "discord.js": "^14.15.3",
     "dotenv": "^8.2.0",
     "eslint": "^7.21.0",
     "mysql": "^2.18.1",
