@@ -1,7 +1,6 @@
 import { prefix, errorResponses } from '../dict.js';
 
 export const getQuote = (args, message, db, cb) => {
-    let quoteId;
     let serverId = message.guild.id;
     if (args.includes('help')) {
         return cb(message, `To retrieve a random quote, simply type **${prefix}quote**. To save a quote, reply to the message you want to save and type **${prefix}quote save**.`);
@@ -19,6 +18,7 @@ export const getQuote = (args, message, db, cb) => {
                     const quote_author_id = quote.author.id;
                     const quote_author_username = quote.author.username;
                     const quote_url = quote.url;
+		    const quoteId = quote.id;
                     if (!quoteContent || !quoteContent.length) {
                         return cb(message, "My tiny stupid mind cannot comprehend the terror of what I presume is just an image or maybe you literally sent a blank message somehow and now want to save it as a quote for some reason. Anyway, I can't save that quote. I just work here, dude, leave me alone. Haven't had a day off in seven million years.");
                     }
