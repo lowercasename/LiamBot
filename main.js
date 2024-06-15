@@ -88,100 +88,99 @@ client.on(Events.MessageCreate, message => {
                 }
                 return message.channel.send(`LiamBot is now unmuted in **${message.channel.name}**. To mute LiamBot, type **${prefix}mute**.`);
             });
+        } else if (isMuted) {
+            return false;
         }
-
-        if (!isMuted) {
-
-            // If the message doesn't start with the prefix, run through some basic responses to non-prefixed messages
-            // or a fun new I died function wow cool
-            if (!message.content.startsWith(prefix)) {
-                let lmsg = message.content.toLowerCase();
-                if (lmsg.includes("liambot") || message.mentions.has(client.user.id) || message.mentions.roles.find(o => o.name === 'LiamBot')) {
-                    const response = getResponse(lmsg, message.author);
-                    if (response) {
-                        return sendMessage(message, response);
-                    }
-                } else if (lmsg.includes("i died")) {
-                    return saveDied(message, db, sendMessage);
+        
+        // If the message doesn't start with the prefix, run through some basic responses to non-prefixed messages
+        // or a fun new I died function wow cool
+        if (!message.content.startsWith(prefix)) {
+            let lmsg = message.content.toLowerCase();
+            if (lmsg.includes("liambot") || message.mentions.has(client.user.id) || message.mentions.roles.find(o => o.name === 'LiamBot')) {
+                const response = getResponse(lmsg, message.author);
+                if (response) {
+                    return sendMessage(message, response);
                 }
+            } else if (lmsg.includes("i died")) {
+                return saveDied(message, db, sendMessage);
+            }
+        } else {
+            // Otherwise, create an argument parser.
+            let args = message.content.slice(prefix.length).trim().split(/ +/);
+            const command = args.shift().toLowerCase();
+
+            // console.log(args);
+
+            let recipient;
+
+            // Check if we want to direct this at anyone
+            if (message.mentions.users.size) {
+                recipient = message.mentions.users.first();
             } else {
-                // Otherwise, create an argument parser.
-                let args = message.content.slice(prefix.length).trim().split(/ +/);
-                const command = args.shift().toLowerCase();
+                recipient = message.author;
+            }
 
-                // console.log(args);
-
-                let recipient;
-
-                // Check if we want to direct this at anyone
-                if (message.mentions.users.size) {
-                    recipient = message.mentions.users.first();
+            if (command === 'roll' || command === "r") {
+                let rollGenerator;
+                // Check if this is a weighted roll
+                if (args.some(arg => arg.startsWith('w'))) {
+                    const weight = args.find(arg => arg.startsWith('w')).slice(1);
+                    // Remove the weighting index so we don't confuse the die roller
+                    args = args.filter(arg => !arg.startsWith('w'));
+                    rollGenerator = new DiceRoller(() => weightedRandom(weight));
                 } else {
-                    recipient = message.author;
+                    rollGenerator = diceRoller;
+                }
+                return sendMessage(message, returnRoll(args, recipient, rollGenerator, renderer));
+
+            } else if (command === "yell") {
+                if (!args.length) {
+                    return sendMessage(message, "Shhh.");
                 }
 
-                if (command === 'roll' || command === "r") {
-                    let rollGenerator;
-                    // Check if this is a weighted roll
-                    if (args.some(arg => arg.startsWith('w'))) {
-                        const weight = args.find(arg => arg.startsWith('w')).slice(1);
-                        // Remove the weighting index so we don't confuse the die roller
-                        args = args.filter(arg => !arg.startsWith('w'));
-                        rollGenerator = new DiceRoller(() => weightedRandom(weight));
-                    } else {
-                        rollGenerator = diceRoller;
-                    }
-                    return sendMessage(message, returnRoll(args, recipient, rollGenerator, renderer));
-
-                } else if (command === "yell") {
-                    if (!args.length) {
-                        return sendMessage(message, "Shhh.");
-                    }
-
-                    // For the yeller, we join the args back together as well!
-                    const yellInput = args.join(' ');
-                    const yellOutput = `@everyone ${yellInput.toUpperCase()}`;
-                    return sendMessage(message, yellOutput);
-                } else if (command === "whisper") {
-                    if (!args.length) {
-                        return sendMessage(message, "Speak up!");
-                    }
-
-                    // For the whisperer, we join the args back together as well!
-                    const whisperInput = args.join(' ');
-                    const whisperOutput = `${tinytext(whisperInput.toLowerCase())}`;
-                    return sendMessage(message, whisperOutput);
-                } else if (command === "lotr") {
-                    const lotrAPICall = await lotrAPI();
-                    return sendMessage(message, lotrAPICall);
-                } else if (command === "book") {
-                    let ret = returnPassage(message, args)
-                    return sendMessage(message, ret[0], ret[1], ret[2]);
-                } else if (command === "ask") {
-                    if (!args.length) {
-                        return sendMessage(message, "You're not giving me much to work with here.");
-                    }
-                    // Responds with a randomised yes or no
-                    return sendMessage(message, Math.random() >= 0.5 ? 'yes.' : 'no.', true);
-                } else if (command === "help") {
-                    // Responds with a help message
-                    return sendMessage(message, helpMessage, true);
-                } else if (command === 'dnd') {
-                    return sendMessage(message, doDND(args));
-                } else if (command === 'deaths') {
-                    return returnDeaths(message, db, sendMessage);
-                } else if (command === 'quote') {
-                    return getQuote(args, message, db, sendMessage);
-                } else if (command === "mute") {
-                    // Mute the bot in this channel - it will still run, but it will never respond
-                    db.query(`INSERT INTO channels (channel_id, muted) VALUES(?, ?) ON DUPLICATE KEY UPDATE muted="?"`, [channelId, 1, 1], function (error) {
-                        if (error) {
-                            console.error(error);
-                            return message.channel.send(errorResponses[Math.floor(Math.random() * errorResponses.length)]);
-                        }
-                        return message.channel.send(`LiamBot is now muted in **${message.channel.name}**. To unmute LiamBot, type **${prefix}unmute**.`);
-                    });
+                // For the yeller, we join the args back together as well!
+                const yellInput = args.join(' ');
+                const yellOutput = `@everyone ${yellInput.toUpperCase()}`;
+                return sendMessage(message, yellOutput);
+            } else if (command === "whisper") {
+                if (!args.length) {
+                    return sendMessage(message, "Speak up!");
                 }
+
+                // For the whisperer, we join the args back together as well!
+                const whisperInput = args.join(' ');
+                const whisperOutput = `${tinytext(whisperInput.toLowerCase())}`;
+                return sendMessage(message, whisperOutput);
+            } else if (command === "lotr") {
+                const lotrAPICall = await lotrAPI();
+                return sendMessage(message, lotrAPICall);
+            } else if (command === "book") {
+                let ret = returnPassage(message, args)
+                return sendMessage(message, ret[0], ret[1], ret[2]);
+            } else if (command === "ask") {
+                if (!args.length) {
+                    return sendMessage(message, "You're not giving me much to work with here.");
+                }
+                // Responds with a randomised yes or no
+                return sendMessage(message, Math.random() >= 0.5 ? 'yes.' : 'no.', true);
+            } else if (command === "help") {
+                // Responds with a help message
+                return sendMessage(message, helpMessage, true);
+            } else if (command === 'dnd') {
+                return sendMessage(message, doDND(args));
+            } else if (command === 'deaths') {
+                return returnDeaths(message, db, sendMessage);
+            } else if (command === 'quote') {
+                return getQuote(args, message, db, sendMessage);
+            } else if (command === "mute") {
+                // Mute the bot in this channel - it will still run, but it will never respond
+                db.query(`INSERT INTO channels (channel_id, muted) VALUES(?, ?) ON DUPLICATE KEY UPDATE muted="?"`, [channelId, 1, 1], function (error) {
+                    if (error) {
+                        console.error(error);
+                        return message.channel.send(errorResponses[Math.floor(Math.random() * errorResponses.length)]);
+                    }
+                    return message.channel.send(`LiamBot is now muted in **${message.channel.name}**. To unmute LiamBot, type **${prefix}unmute**.`);
+                });
             }
         }
     }); // End muted DB check
