@@ -13,6 +13,7 @@ import { returnRoll } from './message/roll.js';
 import { doDND } from './message/dnd.js';
 import { errorResponses, prefix, helpMessage } from './dict.js';
 import { returnPassage } from './message/book.js';
+import { respondXkcd } from './message/xkcd.js';
 
 const db = createConnection({
     host: 'localhost',
@@ -91,7 +92,7 @@ client.on(Events.MessageCreate, message => {
         } else if (isMuted) {
             return false;
         }
-        
+
         // If the message doesn't start with the prefix, run through some basic responses to non-prefixed messages
         // or a fun new I died function wow cool
         if (!message.content.startsWith(prefix)) {
@@ -172,6 +173,8 @@ client.on(Events.MessageCreate, message => {
                 return returnDeaths(message, db, sendMessage);
             } else if (command === 'quote') {
                 return getQuote(args, message, db, sendMessage);
+            } else if (command === 'xkcd') {
+                return sendMessage(message, await respondXkcd(args));
             } else if (command === "mute") {
                 // Mute the bot in this channel - it will still run, but it will never respond
                 db.query(`INSERT INTO channels (channel_id, muted) VALUES(?, ?) ON DUPLICATE KEY UPDATE muted="?"`, [channelId, 1, 1], function (error) {
