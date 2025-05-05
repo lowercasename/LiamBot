@@ -2,7 +2,6 @@ import 'dotenv/config'
 import { Client, GatewayIntentBits, Events } from 'discord.js';
 import DiceRoller from '@3d-dice/dice-roller-parser';
 import axios from 'axios';
-import { createConnection } from 'mysql';
 import tinytext from 'tiny-text';
 
 import { sendMessage } from './lib/discord.js';
@@ -14,23 +13,19 @@ import { doDND } from './message/dnd.js';
 import { errorResponses, prefix, helpMessage } from './dict.js';
 import { returnPassage } from './message/book.js';
 import { respondXkcd } from './message/xkcd.js';
+import sqlite3 from 'sqlite3'
+import { open } from 'sqlite'
 
-const db = createConnection({
-    host: 'localhost',
-    user: 'root',
-    password: process.env.MYSQL,
-    database: 'liambot',
-    charset: 'utf8mb4',
-});
+// Initialize SQLite database connection
+const initDb = async () => {
+  return await open({
+    filename: "./database/database.sqlite",
+    driver: sqlite3.Database
+  });
+};
 
-db.connect();
-
-// const suckOnThisANU = () => {
-//     return axios.get(`https://qrng.anu.edu.au/API/jsonI.php?length=1&type=uint16`)
-//         .then(response => {
-//             return response.data.data[0] / 65535;
-//         });
-// }
+// Create a database promise
+const dbPromise = initDb();
 
 const weightedRandom = (weight) => {
     weight = parseFloat(weight);
@@ -58,37 +53,31 @@ client.once(Events.ClientReady, readyClient => {
     console.log(`Ready! Logged in as ${readyClient.user.tag}`);
 });
 
-client.on(Events.MessageCreate, message => {
+client.on(Events.MessageCreate, async message => {
     // Ignore all messages targeting @everyone or @here or sent by bots
     if (message.content.includes("@here") || message.content.includes("@everyone") || message.author.bot) {
         return false;
     }
 
-    // Are we muted?
-    const channelId = message.channel.id;
-    let isMuted;
-    db.query(`SELECT * FROM channels WHERE channel_id = ?;`, [channelId], async function (error, results) {
-        if (error) {
-            console.error(error);
-            console.log('Database error');
-            return message.channel.send(errorResponses[Math.floor(Math.random() * errorResponses.length)]);
-        }
-        const result = results[0];
-        if (result) {
-            isMuted = result.muted === 1 ? true : false;
-        } else {
-            isMuted = false;
-        }
+    try {
+        // Get the database connection
+        const db = await dbPromise;
+
+        // Are we muted?
+        const channelId = message.channel.id;
+
+        // Check if the channel is muted
+        const row = await db.get(`SELECT * FROM channels WHERE channel_id = ?`, channelId);
+        const isMuted = row ? row.muted === 1 : false;
+
         if (isMuted && message.content === `${prefix}unmute`) {
-            console.log('hello');
-            // Mute the bot in this channel - it will still run, but it will never respond
-            db.query(`INSERT INTO channels (channel_id, muted) VALUES(?, ?) ON DUPLICATE KEY UPDATE muted="?"`, [channelId, 0, 0], function (error) {
-                if (error) {
-                    console.error(error);
-                    return message.channel.send(errorResponses[Math.floor(Math.random() * errorResponses.length)]);
-                }
-                return message.channel.send(`LiamBot is now unmuted in **${message.channel.name}**. To mute LiamBot, type **${prefix}mute**.`);
-            });
+            // Unmute the bot in this channel
+            await db.run(
+                `INSERT INTO channels (channel_id, muted) VALUES (?, ?)
+                 ON CONFLICT(channel_id) DO UPDATE SET muted = ?`,
+                [channelId, 0, 0]
+            );
+            return message.channel.send(`LiamBot is now unmuted in **${message.channel.name}**. To mute LiamBot, type **${prefix}mute**.`);
         } else if (isMuted) {
             return false;
         }
@@ -109,8 +98,6 @@ client.on(Events.MessageCreate, message => {
             // Otherwise, create an argument parser.
             let args = message.content.slice(prefix.length).trim().split(/ +/);
             const command = args.shift().toLowerCase();
-
-            // console.log(args);
 
             let recipient;
 
@@ -177,16 +164,18 @@ client.on(Events.MessageCreate, message => {
                 return sendMessage(message, await respondXkcd(args));
             } else if (command === "mute") {
                 // Mute the bot in this channel - it will still run, but it will never respond
-                db.query(`INSERT INTO channels (channel_id, muted) VALUES(?, ?) ON DUPLICATE KEY UPDATE muted="?"`, [channelId, 1, 1], function (error) {
-                    if (error) {
-                        console.error(error);
-                        return message.channel.send(errorResponses[Math.floor(Math.random() * errorResponses.length)]);
-                    }
-                    return message.channel.send(`LiamBot is now muted in **${message.channel.name}**. To unmute LiamBot, type **${prefix}unmute**.`);
-                });
+                await db.run(
+                    `INSERT INTO channels (channel_id, muted) VALUES (?, ?)
+                     ON CONFLICT(channel_id) DO UPDATE SET muted = ?`,
+                    [channelId, 1, 1]
+                );
+                return message.channel.send(`LiamBot is now muted in **${message.channel.name}**. To unmute LiamBot, type **${prefix}unmute**.`);
             }
         }
-    }); // End muted DB check
-}); // End event
+    } catch (error) {
+        console.error(error);
+        return message.channel.send(errorResponses[Math.floor(Math.random() * errorResponses.length)]);
+    }
+});
 
 client.login(process.env.TOKEN);
