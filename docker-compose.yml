@@ -1,0 +1,11 @@
+services:
+  liambot:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: liambot
+    restart: unless-stopped
+    volumes:
+      - ./database:/app/database
+    env_file:
+      - .env

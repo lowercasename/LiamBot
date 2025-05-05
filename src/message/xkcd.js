@@ -1,4 +1,4 @@
-import { errorResponses, prefix } from "../dict.js";
+import { errorResponses, prefix } from "../lib/dict.js";
 
 // Formats the xkcd result into a Discord message
 const formatXkcdResult = (result) => {

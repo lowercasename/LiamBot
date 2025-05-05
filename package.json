@@ -21,6 +21,6 @@
     "util": "^0.12.3"
   },
   "scripts": {
-    "start": "node main.js"
+    "start": "node src/main.js"
   }
 }

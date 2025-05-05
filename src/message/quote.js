@@ -1,4 +1,4 @@
-import { prefix, errorResponses } from '../dict.js';
+import { prefix, errorResponses } from '../lib/dict.js';
 
 /**
  * Get or save a quote
@@ -16,8 +16,6 @@ export const getQuote = async (args, message, db, cb) => {
         if (args.includes('help')) {
             return cb(message, `To retrieve a random quote, simply type **${prefix}quote**. To save a quote, reply to the message you want to save and type **${prefix}quote save**.`);
         }
-
-        console.log(args);
 
         // Save a quote
         if (args.includes('save') || args.includes('add')) {

@@ -10,7 +10,7 @@ import { getResponse } from './message/namedResponses.js';
 import { saveDied, returnDeaths } from './message/deathCounter.js';
 import { returnRoll } from './message/roll.js';
 import { doDND } from './message/dnd.js';
-import { errorResponses, prefix, helpMessage } from './dict.js';
+import { errorResponses, prefix, helpMessage } from './lib/dict.js';
 import { returnPassage } from './message/book.js';
 import { respondXkcd } from './message/xkcd.js';
 import sqlite3 from 'sqlite3'
@@ -19,7 +19,7 @@ import { open } from 'sqlite'
 // Initialize SQLite database connection
 const initDb = async () => {
   return await open({
-    filename: "./database/database.sqlite",
+    filename: process.env.DB_PATH,
     driver: sqlite3.Database
   });
 };

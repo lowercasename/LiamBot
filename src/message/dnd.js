@@ -1,5 +1,5 @@
-import { generate } from '../dndgen.js';
-import { prefix } from '../dict.js';
+import { generate } from '../lib/dndgen.js';
+import { prefix } from '../lib/dict.js';
 
 export const doDND = (args) => {
     if (args.includes('help')) {

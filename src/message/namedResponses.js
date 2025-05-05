@@ -1,4 +1,4 @@
-import { helpMessage, scurryRalphie } from '../dict.js';
+import { helpMessage, scurryRalphie } from '../lib/dict.js';
 
 const getMonkeys = (author) => {
     if (Math.random() >= 0.25) {

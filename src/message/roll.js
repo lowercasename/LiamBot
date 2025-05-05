@@ -1,4 +1,4 @@
-import { errorResponses } from '../dict.js';
+import { errorResponses } from '../lib/dict.js';
 
 export const returnRoll = (args, recipient, rollGenerator, renderer) => {
     if (!args.length) {
@@ -24,4 +24,3 @@ export const returnRoll = (args, recipient, rollGenerator, renderer) => {
         return response;
     }
 };
-

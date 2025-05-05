@@ -1,4 +1,4 @@
-import { errorResponses } from '../dict.js';
+import { errorResponses } from '../lib/dict.js';
 
 /**
  * Get random objects from array without modifying the original
